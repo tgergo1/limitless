@@ -39,15 +39,28 @@ jobs:
         run: |
           CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=800 bash tests/ci/run_coverage.sh
 
+      - name: List Coverage Outputs
+        if: always()
+        run: |
+          if [ -d build/coverage ]; then
+            ls -la build/coverage
+          else
+            echo "build/coverage does not exist"
+          fi
+
       - name: Upload Coverage Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
+          if-no-files-found: warn
+          retention-days: 30
           path: |
             build/coverage/coverage.xml
             build/coverage/coverage.txt
 
       - name: Upload coverage reports to Codecov
+        if: success()
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
