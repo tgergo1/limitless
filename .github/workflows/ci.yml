@@ -224,7 +224,7 @@ jobs:
       - name: Install Dependencies
         run: apk add --no-cache bash build-base git python3
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Run Musl Matrix Script
         run: |
           CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
@@ -234,7 +234,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Run Big Endian Emulation
         uses: uraimo/run-on-arch-action@v2
         with:
@@ -252,7 +252,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Python
         uses: actions/setup-python@v5
