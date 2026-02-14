@@ -1343,7 +1343,7 @@ static limitless_status limitless__bigint_from_base_digits(limitless_ctx* ctx, l
 static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, const limitless_bigint* a, int base, char** out_s, limitless_size* out_len) {
   limitless_bigint t;
   limitless_size bits;
-  limitless_size cap;
+  limitless_size cap = 0;
   limitless_size n = 0;
   char* rev = NULL;
   char* s = NULL;
