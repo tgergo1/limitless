@@ -82,6 +82,10 @@ EOF_CONAN_CMAKE
 fi
 
 if [[ -n "${VCPKG_ROOT:-}" && -x "${VCPKG_ROOT}/vcpkg" ]]; then
+  if [[ -n "${VCPKG_DEFAULT_BINARY_CACHE:-}" ]]; then
+    mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
+  fi
+
   case "$(uname -s)" in
     Linux)
       VCPKG_TRIPLET="${VCPKG_TRIPLET:-x64-linux}"

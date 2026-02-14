@@ -1,9 +1,7 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 # Limitless
 
-Single-header exact big numbers for c and c++.
-
-it stores exact integers and exact fractions (`a/b`) and grows until memory runs out.
+Single-header exact big numbers for c and c++. It stores exact integers and exact fractions (`a/b`) and grows until memory runs out.
 
 ## What is in this repo
 
@@ -128,8 +126,6 @@ CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh lsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh tsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh extended-stress
 ```
-
-`m32` and some sanitizer modes are linux-toolchain dependent.
 
 packaging smoke checks:
 
