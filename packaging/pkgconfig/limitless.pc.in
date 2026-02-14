@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-3.0-only
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+includedir=${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: limitless
+Description: Exact arbitrary-precision integer/rational library for C and C++
+Version: @PROJECT_VERSION@
+Cflags: -I${includedir}
+Libs:

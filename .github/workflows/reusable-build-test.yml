@@ -1,0 +1,123 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Reusable Build And Test
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      family:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+      cc:
+        required: false
+        default: ""
+        type: string
+      cxx:
+        required: false
+        default: ""
+        type: string
+      gcc-version:
+        required: false
+        default: ""
+        type: string
+      clang-version:
+        required: false
+        default: ""
+        type: string
+      windows-compiler:
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  build-test:
+    name: ${{ inputs.os }} / ${{ inputs.family }} / ${{ inputs.mode }}
+    runs-on: ${{ inputs.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup GCC
+        if: runner.os == 'Linux' && inputs.family == 'gcc'
+        uses: egor-tensin/setup-gcc@v1
+        with:
+          version: ${{ inputs.gcc-version }}
+
+      - name: Setup LLVM
+        if: runner.os == 'Linux' && inputs.family == 'clang'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: ${{ inputs.clang-version }}
+
+      - name: Setup Homebrew LLVM
+        if: runner.os == 'macOS' && inputs.family == 'llvm'
+        run: |
+          brew update
+          brew install llvm
+          if [ -x /opt/homebrew/opt/llvm/bin/clang ]; then
+            echo "CC_BIN=/opt/homebrew/opt/llvm/bin/clang" >> "$GITHUB_ENV"
+            echo "CXX_BIN=/opt/homebrew/opt/llvm/bin/clang++" >> "$GITHUB_ENV"
+          elif [ -x /usr/local/opt/llvm/bin/clang ]; then
+            echo "CC_BIN=/usr/local/opt/llvm/bin/clang" >> "$GITHUB_ENV"
+            echo "CXX_BIN=/usr/local/opt/llvm/bin/clang++" >> "$GITHUB_ENV"
+          else
+            echo "failed to locate Homebrew llvm clang" >&2
+            exit 1
+          fi
+
+      - name: Setup 32-bit Toolchain Dependencies
+        if: runner.os == 'Linux' && inputs.mode == 'm32'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib libc6-dev-i386
+
+      - name: Setup MSVC Environment
+        if: runner.os == 'Windows' && (inputs.family == 'msvc' || inputs.family == 'clang-cl')
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Setup MSYS2
+        if: runner.os == 'Windows' && inputs.family == 'mingw'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+
+      - name: Set Compiler Environment
+        if: (runner.os != 'Windows' || inputs.family != 'mingw') && !(runner.os == 'macOS' && inputs.family == 'llvm')
+        run: |
+          echo "CC_BIN=${{ inputs.cc }}" >> "$GITHUB_ENV"
+          echo "CXX_BIN=${{ inputs.cxx }}" >> "$GITHUB_ENV"
+
+      - name: Check Version Consistency
+        run: python3 tools/check_version.py
+
+      - name: Run Unix Matrix Script
+        if: runner.os != 'Windows'
+        run: |
+          CC_BIN="${CC_BIN}" CXX_BIN="${CXX_BIN}" bash tests/ci/run_unix_matrix.sh "${{ inputs.mode }}"
+
+      - name: Run MinGW Matrix Script
+        if: runner.os == 'Windows' && inputs.family == 'mingw'
+        shell: msys2 {0}
+        run: |
+          CC_BIN="${{ inputs.cc }}" CXX_BIN="${{ inputs.cxx }}" bash tests/ci/run_unix_matrix.sh "${{ inputs.mode }}"
+
+      - name: Run MSVC/Clang-CL Matrix Script
+        if: runner.os == 'Windows' && (inputs.family == 'msvc' || inputs.family == 'clang-cl')
+        shell: pwsh
+        run: |
+          ./tests/ci/run_windows_msvc.ps1 -Mode '${{ inputs.mode }}' -Compiler '${{ inputs.windows-compiler }}'

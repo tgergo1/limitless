@@ -1,0 +1,292 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }} / ${{ matrix.family }} / ${{ matrix.mode }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            family: gcc
+            mode: default
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
+            mode: limb64
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
+            mode: noexceptions
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
+            mode: extended-stress
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
+            mode: asan-ubsan
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
+            mode: lsan
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
+            mode: m32
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+
+          - os: ubuntu-latest
+            family: gcc
+            mode: default
+            cc: gcc-12
+            cxx: g++-12
+            gcc-version: "12"
+          - os: ubuntu-latest
+            family: gcc
+            mode: default
+            cc: gcc-11
+            cxx: g++-11
+            gcc-version: "11"
+
+          - os: ubuntu-latest
+            family: clang
+            mode: default
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+          - os: ubuntu-latest
+            family: clang
+            mode: limb64
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+          - os: ubuntu-latest
+            family: clang
+            mode: noexceptions
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+          - os: ubuntu-latest
+            family: clang
+            mode: extended-stress
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+          - os: ubuntu-latest
+            family: clang
+            mode: asan-ubsan
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+          - os: ubuntu-latest
+            family: clang
+            mode: tsan
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+          - os: ubuntu-latest
+            family: clang
+            mode: m32
+            cc: clang-17
+            cxx: clang++-17
+            clang-version: "17"
+
+          - os: ubuntu-latest
+            family: clang
+            mode: default
+            cc: clang-16
+            cxx: clang++-16
+            clang-version: "16"
+          - os: ubuntu-latest
+            family: clang
+            mode: default
+            cc: clang-18
+            cxx: clang++-18
+            clang-version: "18"
+
+          - os: macos-latest
+            family: appleclang
+            mode: default
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            family: appleclang
+            mode: limb64
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            family: appleclang
+            mode: noexceptions
+            cc: clang
+            cxx: clang++
+
+          - os: macos-latest
+            family: llvm
+            mode: default
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            family: llvm
+            mode: limb64
+            cc: clang
+            cxx: clang++
+          - os: macos-latest
+            family: llvm
+            mode: noexceptions
+            cc: clang
+            cxx: clang++
+
+          - os: windows-latest
+            family: msvc
+            mode: default
+            windows-compiler: cl
+          - os: windows-latest
+            family: msvc
+            mode: limb64
+            windows-compiler: cl
+          - os: windows-latest
+            family: msvc
+            mode: noexceptions
+            windows-compiler: cl
+
+          - os: windows-latest
+            family: clang-cl
+            mode: default
+            windows-compiler: clang-cl
+          - os: windows-latest
+            family: clang-cl
+            mode: limb64
+            windows-compiler: clang-cl
+          - os: windows-latest
+            family: clang-cl
+            mode: noexceptions
+            windows-compiler: clang-cl
+
+          - os: windows-latest
+            family: mingw
+            mode: default
+            cc: gcc
+            cxx: g++
+          - os: windows-latest
+            family: mingw
+            mode: limb64
+            cc: gcc
+            cxx: g++
+          - os: windows-latest
+            family: mingw
+            mode: noexceptions
+            cc: gcc
+            cxx: g++
+
+    uses: ./.github/workflows/reusable-build-test.yml
+    with:
+      os: ${{ matrix.os }}
+      family: ${{ matrix.family }}
+      mode: ${{ matrix.mode }}
+      cc: ${{ matrix.cc }}
+      cxx: ${{ matrix.cxx }}
+      gcc-version: ${{ matrix.gcc-version }}
+      clang-version: ${{ matrix.clang-version }}
+      windows-compiler: ${{ matrix.windows-compiler }}
+
+  musl-alpine:
+    name: linux-musl / gcc / default
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.21
+    steps:
+      - name: Install Dependencies
+        run: apk add --no-cache bash build-base git python3
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Musl Matrix Script
+        run: |
+          CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
+
+  big-endian-s390x:
+    name: linux-s390x / gcc / default
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Big Endian Emulation
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: s390x
+          distro: alpine_latest
+          githubToken: ${{ github.token }}
+          install: |
+            apk add --no-cache bash build-base git python3
+          run: |
+            CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
+
+  packaging-smoke:
+    name: packaging-smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config ninja-build
+          python3 -m pip install --upgrade pip
+          python3 -m pip install conan
+
+      - name: Cache Conan
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'VERSION') }}
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/vcpkg/archives
+            ~/vcpkg/downloads
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('packaging/vcpkg/ports/limitless/**', 'CMakeLists.txt', 'VERSION') }}
+
+      - name: Setup vcpkg
+        run: |
+          git clone --depth 1 https://github.com/microsoft/vcpkg "$HOME/vcpkg"
+          "$HOME/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
+          echo "VCPKG_DEFAULT_BINARY_CACHE=$HOME/.cache/vcpkg/archives" >> "$GITHUB_ENV"
+
+      - name: Packaging Smoke Test
+        run: bash tests/ci/packaging_smoke.sh

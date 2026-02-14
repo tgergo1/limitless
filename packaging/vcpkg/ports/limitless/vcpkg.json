@@ -1,0 +1,18 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "limitless",
+  "version-string": "0.1.0",
+  "description": "Single-header exact arbitrary-precision integer/rational library for C and C++.",
+  "homepage": "https://github.com/tgergo1/limitless",
+  "license": "GPL-3.0-only",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ]
+}
