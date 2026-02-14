@@ -7,6 +7,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 VERSION_RE = re.compile(r"^([0-9]+)\.([0-9]+)\.([0-9]+)$")
+PRERELEASE_RE = re.compile(r"^(rc|beta)([0-9A-Za-z.-]*)$")
 
 
 def fail(msg: str) -> None:
@@ -75,10 +76,20 @@ def main() -> None:
         tag = sys.argv[1].strip()
         if tag.startswith("refs/tags/"):
             tag = tag.split("/", 2)[2]
-        if tag.startswith("v"):
-            tag = tag[1:]
-        if tag != expected:
-            fail(f"tag version {tag} does not match VERSION {expected}")
+        if not tag.startswith("v"):
+            fail(f"tag must start with 'v': {tag}")
+        tag_version = tag[1:]
+        if tag_version == expected:
+            pass
+        elif tag_version.startswith(expected + "-"):
+            prerelease = tag_version[len(expected) + 1 :]
+            if not PRERELEASE_RE.match(prerelease):
+                fail(
+                    "tag prerelease suffix must start with rc or beta, "
+                    f"got: {tag_version}"
+                )
+        else:
+            fail(f"tag version {tag_version} does not match VERSION {expected}")
 
     print(f"version check ok: {expected}")
 

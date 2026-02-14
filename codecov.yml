@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: GPL-3.0-only
+#
+# Token is provided via GitHub secret CODECOV_TOKEN (or OIDC in workflow).
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+    patch:
+      default:
+        target: auto

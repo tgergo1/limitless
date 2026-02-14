@@ -176,7 +176,7 @@ bash tests/ci/run_differential.sh build/limitless_cli 5000
 
 ## Release model
 
-- tags drive releases: `vX.Y.Z`
+- tags drive releases: `vX.Y.Z` (stable) or `vX.Y.Z-rc...` / `vX.Y.Z-beta...` (pre-release)
 - release workflow validates tag/version consistency first
 - release assets include:
   - source tar/zip

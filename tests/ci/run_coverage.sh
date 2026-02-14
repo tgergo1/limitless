@@ -9,6 +9,7 @@ CC_BIN="${CC_BIN:-gcc}"
 CXX_BIN="${CXX_BIN:-g++}"
 BUILD_DIR="$ROOT_DIR/build/coverage"
 DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-1000}"
+GCOVR_PARSE_POLICY="${GCOVR_PARSE_POLICY:-negative_hits.warn_once_per_file}"
 mkdir -p "$BUILD_DIR"
 
 CFLAGS_BASE="-std=c99 -Wall -Wextra -Werror -pedantic -O0 --coverage"
@@ -60,12 +61,14 @@ bash tests/ci/run_differential.sh "$BUILD_DIR/limitless_cli" "$DIFF_ITERS"
 gcovr \
   --root "$ROOT_DIR" \
   --filter "$ROOT_DIR/limitless.h" \
+  --gcov-ignore-parse-errors "$GCOVR_PARSE_POLICY" \
   --xml-pretty \
   --output "$BUILD_DIR/coverage.xml"
 
 gcovr \
   --root "$ROOT_DIR" \
   --filter "$ROOT_DIR/limitless.h" \
+  --gcov-ignore-parse-errors "$GCOVR_PARSE_POLICY" \
   --txt \
   --output "$BUILD_DIR/coverage.txt"
 
