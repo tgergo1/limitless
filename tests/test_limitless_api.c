@@ -316,10 +316,205 @@ static void test_failure_atomicity_matrix(void) {
   limitless_number_clear(&ctx, &mod);
 }
 
+static void test_invalid_kind_and_guard_paths(void) {
+  limitless_ctx ctx = make_ctx();
+  limitless_number good;
+  limitless_number weird;
+  limitless_status st = LIMITLESS_OK;
+  char buf[64];
+
+  assert(limitless_number_init(&ctx, &good) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &weird) == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &good, 11) == LIMITLESS_OK);
+
+  weird.kind = (limitless_kind)99;
+  assert(limitless_number_copy(&ctx, &good, &weird) == LIMITLESS_EINVAL);
+  assert(limitless_number_to_cstr(&ctx, &weird, 10, buf, (limitless_size)sizeof(buf), NULL) == LIMITLESS_EINVAL);
+  assert(limitless_number_is_zero(&weird) == 1);
+  assert(limitless_number_is_integer(&weird) == 0);
+  assert(limitless_number_sign(&weird) == 0);
+
+  assert(limitless_number_cmp(NULL, &good, &good, &st) == 0);
+  assert(st == LIMITLESS_EINVAL);
+  assert(limitless_number_cmp(&ctx, NULL, &good, &st) == 0);
+  assert(st == LIMITLESS_EINVAL);
+
+  weird.kind = LIMITLESS_KIND_INT;
+  limitless_number_clear(&ctx, &good);
+  limitless_number_clear(&ctx, &weird);
+}
+
+static void test_deep_oom_sweeps(void) {
+  fail_alloc_state state;
+  limitless_alloc alloc;
+  limitless_ctx ctx;
+  limitless_number out;
+  limitless_number neg_int;
+  limitless_number neg_rat;
+  limitless_number div_a;
+  limitless_number div_b;
+  limitless_number cmp_a;
+  limitless_number cmp_b;
+  limitless_number pow_base;
+  limitless_number mod;
+  int step;
+  int saw_oom;
+  char buf[1024];
+  limitless_status cmp_st;
+  limitless_size written = 0;
+
+  state.fail_after = 1000000;
+  state.calls = 0;
+  alloc.alloc = fail_alloc;
+  alloc.realloc = fail_realloc;
+  alloc.free = fail_free;
+  alloc.user = &state;
+  assert(limitless_ctx_init(&ctx, &alloc) == LIMITLESS_OK);
+
+  assert(limitless_number_init(&ctx, &out) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &neg_int) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &neg_rat) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &div_a) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &div_b) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &cmp_a) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &cmp_b) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &pow_base) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &mod) == LIMITLESS_OK);
+
+  assert(limitless_number_from_i64(&ctx, &neg_int, -123456789) == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &neg_rat, "-9876543210123456789/97") == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &div_a, "123456789012345678901234567890123456789") == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &div_b, "97") == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &cmp_a, "12345678901234567890123456789/97") == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &cmp_b, "-998877665544332211009988776655/89") == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &pow_base, "11223344556677889900112233445566778899") == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &mod, "100000000000000000000000000000000000003") == LIMITLESS_OK);
+
+  set_marker(&ctx, &out);
+  state.calls = 0;
+  state.fail_after = 0;
+  assert(limitless_number_from_i64(&ctx, &out, 1) == LIMITLESS_EOOM);
+  state.fail_after = 1000000;
+  expect_marker(&ctx, &out);
+
+  set_marker(&ctx, &out);
+  state.calls = 0;
+  state.fail_after = 0;
+  assert(limitless_number_from_u64(&ctx, &out, 1u) == LIMITLESS_EOOM);
+  state.fail_after = 1000000;
+  expect_marker(&ctx, &out);
+
+  saw_oom = 0;
+  for (step = 0; step < 256; ++step) {
+    state.fail_after = 1000000;
+    state.calls = 0;
+    set_marker(&ctx, &out);
+    state.fail_after = step;
+    state.calls = 0;
+    if (limitless_number_from_cstr(&ctx, &out,
+                                   "12345678901234567890123456789012345678901234567890/1",
+                                   10) == LIMITLESS_EOOM) {
+      saw_oom = 1;
+      state.fail_after = 1000000;
+      expect_marker(&ctx, &out);
+    }
+  }
+  assert(saw_oom);
+
+  saw_oom = 0;
+  for (step = 0; step < 128; ++step) {
+    state.calls = 0;
+    state.fail_after = step;
+    if (limitless_number_to_cstr(&ctx, &neg_int, 10, buf, (limitless_size)sizeof(buf), &written) == LIMITLESS_EOOM) {
+      saw_oom = 1;
+    }
+  }
+  assert(saw_oom);
+
+  saw_oom = 0;
+  for (step = 0; step < 128; ++step) {
+    state.calls = 0;
+    state.fail_after = step;
+    if (limitless_number_to_cstr(&ctx, &neg_rat, 10, buf, (limitless_size)sizeof(buf), &written) == LIMITLESS_EOOM) {
+      saw_oom = 1;
+    }
+  }
+  assert(saw_oom);
+
+  saw_oom = 0;
+  for (step = 0; step < 256; ++step) {
+    state.fail_after = 1000000;
+    state.calls = 0;
+    set_marker(&ctx, &out);
+    state.fail_after = step;
+    state.calls = 0;
+    if (limitless_number_div(&ctx, &out, &div_a, &div_b) == LIMITLESS_EOOM) {
+      saw_oom = 1;
+      state.fail_after = 1000000;
+      expect_marker(&ctx, &out);
+    }
+  }
+  assert(saw_oom);
+
+  saw_oom = 0;
+  for (step = 0; step < 256; ++step) {
+    state.calls = 0;
+    state.fail_after = step;
+    (void)limitless_number_cmp(&ctx, &cmp_a, &cmp_b, &cmp_st);
+    if (cmp_st == LIMITLESS_EOOM) {
+      saw_oom = 1;
+    }
+  }
+  assert(saw_oom);
+
+  saw_oom = 0;
+  for (step = 0; step < 256; ++step) {
+    state.fail_after = 1000000;
+    state.calls = 0;
+    set_marker(&ctx, &out);
+    state.fail_after = step;
+    state.calls = 0;
+    if (limitless_number_pow_u64(&ctx, &out, &pow_base, 29) == LIMITLESS_EOOM) {
+      saw_oom = 1;
+      state.fail_after = 1000000;
+      expect_marker(&ctx, &out);
+    }
+  }
+  assert(saw_oom);
+
+  saw_oom = 0;
+  for (step = 0; step < 384; ++step) {
+    state.fail_after = 1000000;
+    state.calls = 0;
+    set_marker(&ctx, &out);
+    state.fail_after = step;
+    state.calls = 0;
+    if (limitless_number_modexp_u64(&ctx, &out, &pow_base, 33, &mod) == LIMITLESS_EOOM) {
+      saw_oom = 1;
+      state.fail_after = 1000000;
+      expect_marker(&ctx, &out);
+    }
+  }
+  assert(saw_oom);
+
+  state.fail_after = 1000000;
+  limitless_number_clear(&ctx, &out);
+  limitless_number_clear(&ctx, &neg_int);
+  limitless_number_clear(&ctx, &neg_rat);
+  limitless_number_clear(&ctx, &div_a);
+  limitless_number_clear(&ctx, &div_b);
+  limitless_number_clear(&ctx, &cmp_a);
+  limitless_number_clear(&ctx, &cmp_b);
+  limitless_number_clear(&ctx, &pow_base);
+  limitless_number_clear(&ctx, &mod);
+}
+
 int main(void) {
   test_constructor_variants_and_copy();
   test_aliasing_and_inplace();
   test_failure_atomicity_matrix();
+  test_invalid_kind_and_guard_paths();
+  test_deep_oom_sweeps();
   printf("api/alias/failure-atomic tests ok\n");
   return 0;
 }

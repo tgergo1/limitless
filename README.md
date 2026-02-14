@@ -83,6 +83,121 @@ int main() {
 }
 ```
 
+## When this is practical
+
+`limitless` is useful when exactness matters more than raw speed:
+
+- exact fractions in calculators, symbolic tools, or education projects
+- big integer math that can exceed 64-bit limits (IDs, counters, crypto exercises)
+- deterministic parse/compute/format pipelines where float rounding is not acceptable
+- portability-focused C/C++ projects that want a small integration surface (single header)
+
+Less practical cases:
+
+- heavy numeric workloads that are fine with IEEE floating point
+- tight real-time loops where big-integer allocation cost is too high
+- scientific/ML workloads that are already built around vectorized float math
+
+## More examples
+
+### C: parse, exact divide, print
+
+```c
+#define LIMITLESS_IMPLEMENTATION
+#include "limitless.h"
+
+int main(void) {
+  limitless_ctx ctx;
+  limitless_number a, b, out;
+  char buf[128];
+
+  if (limitless_ctx_init_default(&ctx) != LIMITLESS_OK) return 1;
+  if (limitless_number_init(&ctx, &a) != LIMITLESS_OK) return 1;
+  if (limitless_number_init(&ctx, &b) != LIMITLESS_OK) return 1;
+  if (limitless_number_init(&ctx, &out) != LIMITLESS_OK) return 1;
+
+  limitless_number_from_str(&ctx, &a, "123456789012345678901234567890");
+  limitless_number_from_str(&ctx, &b, "97");
+  limitless_number_div(&ctx, &out, &a, &b);   /* exact rational if needed */
+  limitless_number_to_str(&ctx, &out, buf, sizeof(buf), NULL);
+
+  limitless_number_clear(&ctx, &a);
+  limitless_number_clear(&ctx, &b);
+  limitless_number_clear(&ctx, &out);
+  return 0;
+}
+```
+
+### C: exact float import and integer export
+
+```c
+#define LIMITLESS_IMPLEMENTATION
+#include "limitless.h"
+
+int main(void) {
+  limitless_ctx ctx;
+  limitless_number n;
+  limitless_i64 out = 0;
+
+  if (limitless_ctx_init_default(&ctx) != LIMITLESS_OK) return 1;
+  if (limitless_number_init(&ctx, &n) != LIMITLESS_OK) return 1;
+
+  /* 0.5 is represented exactly as 1/2 */
+  if (limitless_number_from_double_exact(&ctx, &n, 0.5) != LIMITLESS_OK) return 1;
+
+  /* range-checked integer export */
+  if (limitless_number_to_i64(&ctx, &n, &out) == LIMITLESS_ERANGE) {
+    /* not an integer or out of range */
+  }
+
+  limitless_number_clear(&ctx, &n);
+  return 0;
+}
+```
+
+### C: modular exponentiation (integer-only API)
+
+```c
+#define LIMITLESS_IMPLEMENTATION
+#include "limitless.h"
+
+int main(void) {
+  limitless_ctx ctx;
+  limitless_number base, mod, out;
+  char buf[64];
+
+  limitless_ctx_init_default(&ctx);
+  limitless_number_init(&ctx, &base);
+  limitless_number_init(&ctx, &mod);
+  limitless_number_init(&ctx, &out);
+
+  limitless_number_from_u64(&ctx, &base, 4);
+  limitless_number_from_u64(&ctx, &mod, 497);
+  limitless_number_modexp_u64(&ctx, &out, &base, 13, &mod); /* 4^13 mod 497 */
+  limitless_number_to_str(&ctx, &out, buf, sizeof(buf), NULL); /* "445" */
+
+  limitless_number_clear(&ctx, &base);
+  limitless_number_clear(&ctx, &mod);
+  limitless_number_clear(&ctx, &out);
+  return 0;
+}
+```
+
+### C++: parse, operators, comparisons
+
+```cpp
+#define LIMITLESS_IMPLEMENTATION
+#include "limitless.hpp"
+
+int main() {
+  limitless_number a = limitless_number::parse("7/3");
+  limitless_number b = 2;
+  limitless_number c = (10 + a) * b;
+  bool larger = c > a;
+  return larger && c.str() == "74/3" ? 0 : 1;
+}
+```
+
 ## Package consumption
 
 ### CMake
@@ -153,6 +268,8 @@ coverage run (local):
 python3 -m pip install gcovr
 CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=800 bash tests/ci/run_coverage.sh
 ```
+
+coverage report scope is the core C header implementation (`limitless.h`).
 
 packaging smoke checks:
 
