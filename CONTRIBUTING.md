@@ -25,6 +25,13 @@ CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh tsan
 
 `m32`, `lsan`, and `tsan` availability depends on host toolchain support (fully covered in GitHub CI).
 
+## Coverage check
+
+```sh
+python3 -m pip install gcovr
+CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=800 bash tests/ci/run_coverage.sh
+```
+
 ## Packaging validation
 
 ```sh

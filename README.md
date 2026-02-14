@@ -1,7 +1,27 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 # Limitless
 
+[![CI](https://github.com/tgergo1/limitless/actions/workflows/ci.yml/badge.svg)](https://github.com/tgergo1/limitless/actions/workflows/ci.yml)
+[![Coverage](https://github.com/tgergo1/limitless/actions/workflows/coverage.yml/badge.svg)](https://github.com/tgergo1/limitless/actions/workflows/coverage.yml)
+[![Release](https://github.com/tgergo1/limitless/actions/workflows/release.yml/badge.svg)](https://github.com/tgergo1/limitless/actions/workflows/release.yml)
+[![Latest release](https://img.shields.io/github/v/release/tgergo1/limitless?display_name=tag)](https://github.com/tgergo1/limitless/releases)
+[![License](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)](LICENSE)
+[![Coverage (codecov)](https://codecov.io/gh/tgergo1/limitless/branch/main/graph/badge.svg)](https://codecov.io/gh/tgergo1/limitless)
+[![Open issues](https://img.shields.io/github/issues/tgergo1/limitless)](https://github.com/tgergo1/limitless/issues)
+[![Open PRs](https://img.shields.io/github/issues-pr/tgergo1/limitless)](https://github.com/tgergo1/limitless/pulls)
+[![Last commit](https://img.shields.io/github/last-commit/tgergo1/limitless)](https://github.com/tgergo1/limitless/commits)
+[![GitHub stars](https://img.shields.io/github/stars/tgergo1/limitless?style=social)](https://github.com/tgergo1/limitless/stargazers)
+[![C](https://img.shields.io/badge/C-C99-00599C)](https://github.com/tgergo1/limitless/actions/workflows/ci.yml)
+[![C++](https://img.shields.io/badge/C%2B%2B-C%2B%2B11-00599C)](https://github.com/tgergo1/limitless/actions/workflows/ci.yml)
+[![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macOS%20%7C%20windows-4c1)](https://github.com/tgergo1/limitless/actions/workflows/ci.yml)
+[![CMake](https://img.shields.io/badge/CMake-find__package-064F8C)](#cmake)
+[![Conan](https://img.shields.io/badge/Conan-recipe%20included-6699CB)](#conan-2)
+[![vcpkg](https://img.shields.io/badge/vcpkg-overlay%20port-1f425f)](#vcpkg-overlay-port)
+[![Status](https://img.shields.io/badge/status-experimental-orange)](#)
+
 Single-header exact big numbers for c and c++. It stores exact integers and exact fractions (`a/b`) and grows until memory runs out.
+
+Current line: `experimental`, version `0.1.0`.
 
 ## What is in this repo
 
@@ -125,6 +145,13 @@ CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh asan-ubsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh lsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh tsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh extended-stress
+```
+
+coverage run (local):
+
+```sh
+python3 -m pip install gcovr
+CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=800 bash tests/ci/run_coverage.sh
 ```
 
 packaging smoke checks:
