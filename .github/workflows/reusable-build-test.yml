@@ -48,6 +48,10 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Prepare Linux APT Sources
+        if: runner.os == 'Linux'
+        run: bash tests/ci/apt_prepare_ubuntu.sh
+
       - name: Setup GCC
         if: runner.os == 'Linux' && inputs.family == 'gcc'
         uses: egor-tensin/setup-gcc@v1
@@ -57,7 +61,6 @@ jobs:
       - name: Setup Clang
         if: runner.os == 'Linux' && inputs.family == 'clang'
         run: |
-          sudo apt-get update
           sudo apt-get install -y clang-${{ inputs.clang-version }} lld-${{ inputs.clang-version }}
 
       - name: Setup Homebrew LLVM
@@ -79,7 +82,6 @@ jobs:
       - name: Setup 32-bit Toolchain Dependencies
         if: runner.os == 'Linux' && inputs.mode == 'm32'
         run: |
-          sudo apt-get update
           sudo apt-get install -y gcc-multilib g++-multilib libc6-dev-i386
 
       - name: Setup MSVC Environment
