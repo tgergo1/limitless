@@ -2,6 +2,11 @@
 #
 # Token is provided via GitHub secret CODECOV_TOKEN (or OIDC in workflow).
 
+parsers:
+  cobertura:
+    partials_as_hits: true
+    handle_missing_conditions: true
+
 coverage:
   status:
     project:
