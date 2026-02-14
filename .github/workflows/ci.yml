@@ -274,6 +274,7 @@ jobs:
 
       - name: Setup vcpkg
         run: |
+          rm -rf "$HOME/vcpkg"
           git clone --depth 1 https://github.com/microsoft/vcpkg "$HOME/vcpkg"
           "$HOME/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
           mkdir -p "$HOME/.cache/vcpkg/archives"

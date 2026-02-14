@@ -188,17 +188,38 @@ extern "C" {
 #define LIMITLESS__DEFAULT_KARATSUBA_THRESHOLD ((limitless_size)32)
 
 #ifndef LIMITLESS_DEFAULT_ALLOC
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4565)
+#endif
 extern void* malloc(limitless_size size);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 #define LIMITLESS_DEFAULT_ALLOC(size) malloc((size))
 #endif
 
 #ifndef LIMITLESS_DEFAULT_REALLOC
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4565)
+#endif
 extern void* realloc(void* ptr, limitless_size size);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 #define LIMITLESS_DEFAULT_REALLOC(ptr, old_size, new_size) realloc((ptr), (new_size))
 #endif
 
 #ifndef LIMITLESS_DEFAULT_FREE
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4565)
+#endif
 extern void free(void* ptr);
+#if defined(_MSC_VER)
+#pragma warning(pop)
+#endif
 #define LIMITLESS_DEFAULT_FREE(ptr, size) free((ptr))
 #endif
 
