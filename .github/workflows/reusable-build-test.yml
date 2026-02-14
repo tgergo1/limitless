@@ -54,11 +54,11 @@ jobs:
         with:
           version: ${{ inputs.gcc-version }}
 
-      - name: Setup LLVM
+      - name: Setup Clang
         if: runner.os == 'Linux' && inputs.family == 'clang'
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: ${{ inputs.clang-version }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-${{ inputs.clang-version }} lld-${{ inputs.clang-version }}
 
       - name: Setup Homebrew LLVM
         if: runner.os == 'macOS' && inputs.family == 'llvm'
@@ -95,6 +95,7 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
+            mingw-w64-x86_64-python
 
       - name: Set Compiler Environment
         if: (runner.os != 'Windows' || inputs.family != 'mingw') && !(runner.os == 'macOS' && inputs.family == 'llvm')

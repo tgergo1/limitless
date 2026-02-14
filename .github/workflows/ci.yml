@@ -168,20 +168,12 @@ jobs:
             windows-compiler: cl
           - os: windows-latest
             family: msvc
-            mode: limb64
-            windows-compiler: cl
-          - os: windows-latest
-            family: msvc
             mode: noexceptions
             windows-compiler: cl
 
           - os: windows-latest
             family: clang-cl
             mode: default
-            windows-compiler: clang-cl
-          - os: windows-latest
-            family: clang-cl
-            mode: limb64
             windows-compiler: clang-cl
           - os: windows-latest
             family: clang-cl
@@ -258,7 +250,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
 
       - name: Install Tooling
         run: |

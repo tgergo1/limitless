@@ -39,6 +39,10 @@ typedef signed long long limitless_i64;
 typedef unsigned long long limitless_u64;
 #if defined(__SIZE_TYPE__)
 typedef __SIZE_TYPE__ limitless_size;
+#elif defined(_MSC_VER) && defined(_WIN64)
+typedef unsigned __int64 limitless_size;
+#elif defined(_MSC_VER)
+typedef unsigned int limitless_size;
 #else
 typedef unsigned long limitless_size;
 #endif
@@ -63,7 +67,14 @@ typedef limitless_u64 limitless_dlimb;
 #elif (LIMITLESS_LIMB_BITS == LIMITLESS_LIMB_BITS_64)
 typedef limitless_u64 limitless_limb;
 #if defined(__SIZEOF_INT128__)
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
 typedef unsigned __int128 limitless_dlimb;
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
 #else
 #error "LIMITLESS_LIMB_BITS=64 requires compiler support for unsigned __int128"
 #endif
