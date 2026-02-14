@@ -34,7 +34,7 @@ Current line: `experimental`, version `0.1.0`.
   - differential checks against a python `fractions.Fraction` reference
 - packaging metadata for CMake, pkg-config, Conan, and vcpkg overlay port
 
-current version is tracked in `VERSION` and exposed in `limitless.h`:
+current version is tracked in `LIMITLESS_VERSION.txt` and exposed in `limitless.h`:
 
 - `LIMITLESS_VERSION_MAJOR`
 - `LIMITLESS_VERSION_MINOR`
@@ -227,7 +227,7 @@ cc main.c $(pkg-config --cflags --libs limitless) -o app
 
 ```sh
 conan profile detect --force
-conan create . --version "$(cat VERSION)"
+conan create . --version "$(cat LIMITLESS_VERSION.txt)"
 ```
 
 consumer `conanfile.txt` example:

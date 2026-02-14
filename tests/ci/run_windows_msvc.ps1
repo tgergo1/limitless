@@ -76,6 +76,10 @@ Invoke-CompileC (Join-Path $build "test_multi.exe") @("tests/multi_impl.c", "tes
 & (Join-Path $build "test_multi.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Invoke-CompileCpp (Join-Path $build "test_multi_cpp.exe") @("tests/multi_cpp_impl.cpp", "tests/multi_cpp_a.cpp", "tests/multi_cpp_b.cpp")
+& (Join-Path $build "test_multi_cpp.exe")
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_basic.exe") @("tests/test_limitless_cpp.cpp")
 & (Join-Path $build "test_limitless_cpp_basic.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -86,6 +90,11 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Invoke-CompileCpp (Join-Path $build "test_limitless_threads.exe") @("tests/test_limitless_threads.cpp")
 & (Join-Path $build "test_limitless_threads.exe")
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+& $Compiler @cxxFlags @defs "/I$root" "tests/test_include_repo_root.cpp" "/Fe:$(Join-Path $build "test_include_repo_root.exe")"
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+& (Join-Path $build "test_include_repo_root.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Invoke-CompileC (Join-Path $build "limitless_cli.exe") @("tests/ci/limitless_cli.c")

@@ -5,8 +5,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
+read_version_file() {
+  if [[ -f "LIMITLESS_VERSION.txt" ]]; then
+    tr -d '[:space:]' < "LIMITLESS_VERSION.txt"
+  elif [[ -f "VERSION" ]]; then
+    tr -d '[:space:]' < "VERSION"
+  else
+    echo "missing LIMITLESS_VERSION.txt (legacy fallback: VERSION)" >&2
+    exit 1
+  fi
+}
+
 DIST_DIR="${1:-dist}"
-VERSION_STR="${2:-$(tr -d '[:space:]' < VERSION)}"
+VERSION_STR="${2:-$(read_version_file)}"
 
 SBOM_PATH="$DIST_DIR/limitless-${VERSION_STR}.spdx.json"
 INSTALL_ARCHIVE="$DIST_DIR/limitless-${VERSION_STR}-install.tar.gz"

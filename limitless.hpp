@@ -17,16 +17,21 @@
 #include "limitless.h"
 #undef limitless_number
 
-inline static limitless_status& limitless_cpp__last_status_ref(void) {
+/*
+TU-coherence note:
+These helpers intentionally use external inline linkage (not inline static).
+That ensures one per-thread wrapper state across translation units.
+*/
+inline limitless_status& limitless_cpp__last_status_ref(void) {
   static thread_local limitless_status st = LIMITLESS_OK;
   return st;
 }
 
-inline static void limitless_cpp__set_last_status(limitless_status st) {
+inline void limitless_cpp__set_last_status(limitless_status st) {
   limitless_cpp__last_status_ref() = st;
 }
 
-inline static void limitless_cpp__zero_raw(limitless_c_number* n) {
+inline void limitless_cpp__zero_raw(limitless_c_number* n) {
   n->kind = LIMITLESS_KIND_INT;
   n->v.i.sign = 0;
   n->v.i.used = 0;
@@ -34,12 +39,12 @@ inline static void limitless_cpp__zero_raw(limitless_c_number* n) {
   n->v.i.limbs = NULL;
 }
 
-inline static limitless_ctx*& limitless_cpp__ctx_override_ref(void) {
+inline limitless_ctx*& limitless_cpp__ctx_override_ref(void) {
   static thread_local limitless_ctx* p = NULL;
   return p;
 }
 
-inline static limitless_ctx* limitless_cpp__builtin_ctx(void) {
+inline limitless_ctx* limitless_cpp__builtin_ctx(void) {
   struct limitless_cpp__ctx_holder {
     limitless_ctx ctx;
     limitless_status st;
@@ -51,7 +56,7 @@ inline static limitless_ctx* limitless_cpp__builtin_ctx(void) {
   return &holder.ctx;
 }
 
-inline static limitless_ctx* limitless_cpp__active_ctx(void) {
+inline limitless_ctx* limitless_cpp__active_ctx(void) {
   limitless_ctx* p = limitless_cpp__ctx_override_ref();
   if (p) return p;
   return limitless_cpp__builtin_ctx();

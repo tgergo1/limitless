@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Static Analysis
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: static-analysis-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  codeql:
+    name: codeql / c-cpp
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: c-cpp
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-13 g++-13 python3
+
+      - name: Build Matrix Script (lightweight)
+        run: |
+          CC_BIN=gcc-13 CXX_BIN=g++-13 LIMITLESS_DIFF_ITERS=200 bash tests/ci/run_unix_matrix.sh default
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  clang-analyze:
+    name: clang-analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Run Clang Static Analyzer
+        run: bash tests/ci/run_clang_analyze.sh

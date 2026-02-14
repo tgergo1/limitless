@@ -18,6 +18,7 @@ class LimitlessConan(ConanFile):
         "limitless.hpp",
         "LICENSE",
         "README.md",
+        "LIMITLESS_VERSION.txt",
         "VERSION",
         "CMakeLists.txt",
         "cmake/*",
@@ -25,7 +26,10 @@ class LimitlessConan(ConanFile):
     )
 
     def set_version(self):
-        self.version = load(self, os.path.join(self.recipe_folder, "VERSION")).strip()
+        version_path = os.path.join(self.recipe_folder, "LIMITLESS_VERSION.txt")
+        if not os.path.exists(version_path):
+            version_path = os.path.join(self.recipe_folder, "VERSION")
+        self.version = load(self, version_path).strip()
 
     def package(self):
         copy(self, "limitless.h", self.source_folder, os.path.join(self.package_folder, "include"))

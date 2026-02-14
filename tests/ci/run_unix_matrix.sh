@@ -99,6 +99,9 @@ compile_c "$BUILD_DIR/test_default_allocator_override" tests/test_default_alloca
 compile_c "$BUILD_DIR/test_multi" tests/multi_impl.c tests/multi_a.c tests/multi_b.c
 "$BUILD_DIR/test_multi"
 
+compile_cpp "$BUILD_DIR/test_multi_cpp" tests/multi_cpp_impl.cpp tests/multi_cpp_a.cpp tests/multi_cpp_b.cpp
+"$BUILD_DIR/test_multi_cpp"
+
 compile_cpp "$BUILD_DIR/test_limitless_cpp_basic" tests/test_limitless_cpp.cpp
 "$BUILD_DIR/test_limitless_cpp_basic"
 
@@ -107,6 +110,9 @@ compile_cpp "$BUILD_DIR/test_limitless_cpp_generated" tests/test_limitless_cpp_g
 
 compile_cpp "$BUILD_DIR/test_limitless_threads" tests/test_limitless_threads.cpp
 "$BUILD_DIR/test_limitless_threads"
+
+compile_cpp "$BUILD_DIR/test_include_repo_root" -I"$ROOT_DIR" tests/test_include_repo_root.cpp
+"$BUILD_DIR/test_include_repo_root"
 
 compile_c "$BUILD_DIR/limitless_cli" tests/ci/limitless_cli.c
 bash tests/ci/run_differential.sh "$BUILD_DIR/limitless_cli" "$DIFF_ITERS"

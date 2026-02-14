@@ -42,7 +42,7 @@ pkg-config --cflags --libs limitless
 
 python3 -m pip install conan
 conan profile detect --force
-conan create . --version "$(cat VERSION)"
+conan create . --version "$(cat LIMITLESS_VERSION.txt)"
 ```
 
 To validate vcpkg overlay locally:

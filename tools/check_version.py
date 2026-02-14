@@ -19,10 +19,22 @@ def read_text(path: pathlib.Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def resolve_version_file() -> pathlib.Path:
+    primary = ROOT / "LIMITLESS_VERSION.txt"
+    legacy = ROOT / "VERSION"
+    if primary.is_file():
+        return primary
+    if legacy.is_file():
+        return legacy
+    fail("missing LIMITLESS_VERSION.txt (legacy fallback: VERSION)")
+    return primary
+
+
 def parse_version_file() -> str:
-    v = read_text(ROOT / "VERSION").strip()
+    version_path = resolve_version_file()
+    v = read_text(version_path).strip()
     if not VERSION_RE.match(v):
-        fail(f"VERSION has invalid format: {v}")
+        fail(f"{version_path.name} has invalid format: {v}")
     return v
 
 
@@ -70,7 +82,7 @@ def main() -> None:
 
     for name, got in checks.items():
         if got != expected:
-            fail(f"{name} version {got} does not match VERSION {expected}")
+            fail(f"{name} version {got} does not match version file {expected}")
 
     if len(sys.argv) > 1:
         tag = sys.argv[1].strip()
@@ -89,7 +101,7 @@ def main() -> None:
                     f"got: {tag_version}"
                 )
         else:
-            fail(f"tag version {tag_version} does not match VERSION {expected}")
+            fail(f"tag version {tag_version} does not match version file {expected}")
 
     print(f"version check ok: {expected}")
 
