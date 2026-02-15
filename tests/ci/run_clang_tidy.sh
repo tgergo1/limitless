@@ -6,6 +6,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 CLANG_TIDY_BIN="${CLANG_TIDY_BIN:-clang-tidy}"
+# Keep clang-tidy focused on analyzer checks while filtering known noisy false positives
+# that are already handled by dedicated analyzer policy in run_clang_analyze.sh.
+CLANG_TIDY_CHECKS="${CLANG_TIDY_CHECKS:-clang-analyzer-*,-clang-analyzer-core.NullDereference,-clang-analyzer-unix.Malloc,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,-clang-analyzer-optin.core.EnumCastOutOfRange}"
 
 if ! command -v "$CLANG_TIDY_BIN" >/dev/null 2>&1; then
   echo "clang-tidy not found: $CLANG_TIDY_BIN" >&2
@@ -14,12 +17,12 @@ fi
 
 run_c() {
   local src="$1"
-  "$CLANG_TIDY_BIN" -quiet -warnings-as-errors='*' "$src" -- -std=c11 -Wall -Wextra -Werror -pedantic
+  "$CLANG_TIDY_BIN" -quiet -checks="$CLANG_TIDY_CHECKS" -warnings-as-errors='*' "$src" -- -std=c11 -Wall -Wextra -Werror -pedantic
 }
 
 run_cpp() {
   local src="$1"
-  "$CLANG_TIDY_BIN" -quiet -warnings-as-errors='*' "$src" -- -std=c++11 -Wall -Wextra -Werror -pedantic
+  "$CLANG_TIDY_BIN" -quiet -checks="$CLANG_TIDY_CHECKS" -warnings-as-errors='*' "$src" -- -std=c++11 -Wall -Wextra -Werror -pedantic
 }
 
 for src in \

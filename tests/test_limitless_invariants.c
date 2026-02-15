@@ -40,6 +40,7 @@ static void check_invariants(limitless_ctx* ctx, const limitless_number* n) {
     limitless_number num;
     limitless_number den;
     limitless_number g;
+    limitless_status st;
     char num_s[512];
     char den_s[512];
     limitless_size num_len = (limitless_size)(slash - text);
@@ -49,9 +50,12 @@ static void check_invariants(limitless_ctx* ctx, const limitless_number* n) {
     strncpy(den_s, slash + 1, sizeof(den_s) - 1u);
     den_s[sizeof(den_s) - 1u] = '\0';
 
-    assert(limitless_number_init(ctx, &num) == LIMITLESS_OK);
-    assert(limitless_number_init(ctx, &den) == LIMITLESS_OK);
-    assert(limitless_number_init(ctx, &g) == LIMITLESS_OK);
+    st = limitless_number_init(ctx, &num);
+    assert(st == LIMITLESS_OK);
+    st = limitless_number_init(ctx, &den);
+    assert(st == LIMITLESS_OK);
+    st = limitless_number_init(ctx, &g);
+    assert(st == LIMITLESS_OK);
 
     assert(limitless_number_from_str(ctx, &num, num_s) == LIMITLESS_OK);
     assert(limitless_number_from_str(ctx, &den, den_s) == LIMITLESS_OK);
@@ -70,6 +74,7 @@ static void check_invariants(limitless_ctx* ctx, const limitless_number* n) {
 }
 
 static void test_invariant_stress(void) {
+  limitless_status st;
   limitless_ctx ctx;
   limitless_number a;
   limitless_number b;
@@ -77,10 +82,14 @@ static void test_invariant_stress(void) {
   limitless_u64 seed = 0x9e3779b97f4a7c15ULL;
   int i;
 
-  assert(limitless_ctx_init_default(&ctx) == LIMITLESS_OK);
-  assert(limitless_number_init(&ctx, &a) == LIMITLESS_OK);
-  assert(limitless_number_init(&ctx, &b) == LIMITLESS_OK);
-  assert(limitless_number_init(&ctx, &out) == LIMITLESS_OK);
+  st = limitless_ctx_init_default(&ctx);
+  assert(st == LIMITLESS_OK);
+  st = limitless_number_init(&ctx, &a);
+  assert(st == LIMITLESS_OK);
+  st = limitless_number_init(&ctx, &b);
+  assert(st == LIMITLESS_OK);
+  st = limitless_number_init(&ctx, &out);
+  assert(st == LIMITLESS_OK);
 
   for (i = 0; i < 3500; ++i) {
     char sa[96];

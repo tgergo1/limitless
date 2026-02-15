@@ -414,7 +414,7 @@ jobs:
           tar -C build/release-install/root -czf "dist/limitless-${VERSION}-install.tar.gz" .
 
           python3 tools/generate_spdx_sbom.py --root . --name limitless --version "$VERSION" --out "dist/limitless-${VERSION}.spdx.json"
-          (cd dist && sha256sum * > SHA256SUMS)
+          (cd dist && sha256sum -- ./* > SHA256SUMS)
           python3 tools/extract_changelog.py "${GITHUB_REF_NAME}" > dist/RELEASE_NOTES.md
 
       - name: Verify Release Artifacts

@@ -61,6 +61,62 @@ static void expect_marker(limitless_ctx* ctx, const limitless_number* n) {
   check_str(ctx, n, 10, "777/13");
 }
 
+static void format_ulong_dec(unsigned long v, char* out, size_t cap) {
+  char rev[64];
+  size_t i = 0;
+  size_t j;
+  assert(cap > 0);
+  do {
+    rev[i++] = (char)('0' + (v % 10UL));
+    v /= 10UL;
+  } while (v != 0UL);
+  assert(i + 1 <= cap);
+  for (j = 0; j < i; ++j) out[j] = rev[i - 1 - j];
+  out[i] = '\0';
+}
+
+static void format_long_dec(long v, char* out, size_t cap) {
+  if (v < 0) {
+    unsigned long mag;
+    assert(cap > 1);
+    out[0] = '-';
+    mag = (unsigned long)(-(v + 1L)) + 1UL;
+    format_ulong_dec(mag, out + 1, cap - 1);
+    return;
+  }
+  format_ulong_dec((unsigned long)v, out, cap);
+}
+
+static void format_ull_dec(unsigned long long v, char* out, size_t cap) {
+  char rev[64];
+  size_t i = 0;
+  size_t j;
+  assert(cap > 0);
+  do {
+    rev[i++] = (char)('0' + (v % 10ULL));
+    v /= 10ULL;
+  } while (v != 0ULL);
+  assert(i + 1 <= cap);
+  for (j = 0; j < i; ++j) out[j] = rev[i - 1 - j];
+  out[i] = '\0';
+}
+
+static void format_ll_dec(long long v, char* out, size_t cap) {
+  if (v < 0) {
+    unsigned long long mag;
+    assert(cap > 1);
+    out[0] = '-';
+    mag = (unsigned long long)(-(v + 1LL)) + 1ULL;
+    format_ull_dec(mag, out + 1, cap - 1);
+    return;
+  }
+  format_ull_dec((unsigned long long)v, out, cap);
+}
+
+static void set_invalid_kind(limitless_number* n) {
+  memset(&n->kind, 0x7f, sizeof(n->kind));
+}
+
 static void test_constructor_variants_and_copy(void) {
   limitless_ctx ctx = make_ctx();
   limitless_number n;
@@ -77,28 +133,28 @@ static void test_constructor_variants_and_copy(void) {
   for (i = 0; i < sizeof(sv) / sizeof(sv[0]); ++i) {
     char expect[128];
     assert(limitless_number_from_long(&ctx, &n, sv[i]) == LIMITLESS_OK);
-    assert(snprintf(expect, sizeof(expect), "%ld", sv[i]) > 0);
+    format_long_dec(sv[i], expect, sizeof(expect));
     check_str(&ctx, &n, 10, expect);
   }
 
   for (i = 0; i < sizeof(uv) / sizeof(uv[0]); ++i) {
     char expect[128];
     assert(limitless_number_from_ulong(&ctx, &n, uv[i]) == LIMITLESS_OK);
-    assert(snprintf(expect, sizeof(expect), "%lu", uv[i]) > 0);
+    format_ulong_dec(uv[i], expect, sizeof(expect));
     check_str(&ctx, &n, 10, expect);
   }
 
   for (i = 0; i < sizeof(llv) / sizeof(llv[0]); ++i) {
     char expect[128];
     assert(limitless_number_from_ll(&ctx, &n, llv[i]) == LIMITLESS_OK);
-    assert(snprintf(expect, sizeof(expect), "%lld", llv[i]) > 0);
+    format_ll_dec(llv[i], expect, sizeof(expect));
     check_str(&ctx, &n, 10, expect);
   }
 
   for (i = 0; i < sizeof(ullv) / sizeof(ullv[0]); ++i) {
     char expect[128];
     assert(limitless_number_from_ull(&ctx, &n, ullv[i]) == LIMITLESS_OK);
-    assert(snprintf(expect, sizeof(expect), "%llu", ullv[i]) > 0);
+    format_ull_dec(ullv[i], expect, sizeof(expect));
     check_str(&ctx, &n, 10, expect);
   }
 
@@ -327,7 +383,7 @@ static void test_invalid_kind_and_guard_paths(void) {
   assert(limitless_number_init(&ctx, &weird) == LIMITLESS_OK);
   assert(limitless_number_from_i64(&ctx, &good, 11) == LIMITLESS_OK);
 
-  weird.kind = (limitless_kind)99;
+  set_invalid_kind(&weird);
   assert(limitless_number_copy(&ctx, &good, &weird) == LIMITLESS_EINVAL);
   assert(limitless_number_to_cstr(&ctx, &weird, 10, buf, (limitless_size)sizeof(buf), NULL) == LIMITLESS_EINVAL);
   assert(limitless_number_is_zero(&weird) == 1);

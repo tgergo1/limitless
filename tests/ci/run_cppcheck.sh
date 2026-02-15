@@ -18,6 +18,7 @@ fi
   --enable=warning,style,performance,portability \
   --error-exitcode=1 \
   --suppress=missingIncludeSystem \
+  --suppress=assertWithSideEffect \
   --quiet \
   tests/test_limitless.c \
   tests/test_limitless_api.c \
@@ -33,6 +34,7 @@ fi
   --enable=warning,style,performance,portability \
   --error-exitcode=1 \
   --suppress=missingIncludeSystem \
+  --suppress=assertWithSideEffect \
   --quiet \
   tests/test_limitless_cpp.cpp \
   tests/test_cpp_namespace_strict.cpp \

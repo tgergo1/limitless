@@ -54,6 +54,7 @@ static void stats_free(void* user, void* ptr, limitless_size size) {
 }
 
 int main(void) {
+  limitless_status st;
   alloc_stats stats;
   limitless_alloc alloc;
   limitless_ctx ctx;
@@ -68,10 +69,14 @@ int main(void) {
   alloc.free = stats_free;
   alloc.user = &stats;
 
-  assert(limitless_ctx_init(&ctx, &alloc) == LIMITLESS_OK);
-  assert(limitless_number_init(&ctx, &a) == LIMITLESS_OK);
-  assert(limitless_number_init(&ctx, &b) == LIMITLESS_OK);
-  assert(limitless_number_init(&ctx, &out) == LIMITLESS_OK);
+  st = limitless_ctx_init(&ctx, &alloc);
+  assert(st == LIMITLESS_OK);
+  st = limitless_number_init(&ctx, &a);
+  assert(st == LIMITLESS_OK);
+  st = limitless_number_init(&ctx, &b);
+  assert(st == LIMITLESS_OK);
+  st = limitless_number_init(&ctx, &out);
+  assert(st == LIMITLESS_OK);
 
   assert(limitless_number_from_str(&ctx, &a, "12345678901234567890123456789012345678901234567890/97") == LIMITLESS_OK);
   assert(limitless_number_from_str(&ctx, &b, "99887766554433221100998877665544332211009988776655/89") == LIMITLESS_OK);

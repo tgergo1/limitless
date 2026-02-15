@@ -236,6 +236,8 @@ static void limitless__mem_copy(void* dst, const void* src, limitless_size n) {
   limitless_size i;
   limitless_u8* d = (limitless_u8*)dst;
   const limitless_u8* s = (const limitless_u8*)src;
+  if (n == 0) return;
+  if (!d || !s) return;
   for (i = 0; i < n; ++i) {
     d[i] = s[i];
   }
@@ -341,6 +343,11 @@ static void limitless__bigint_init_raw(limitless_bigint* a) {
 }
 
 static void limitless__bigint_norm(limitless_bigint* a) {
+  if (a->used > 0 && !a->limbs) {
+    a->used = 0;
+    a->sign = 0;
+    return;
+  }
   while (a->used > 0 && a->limbs[a->used - 1] == (limitless_limb)0) {
     --a->used;
   }
@@ -354,7 +361,9 @@ static limitless_status limitless__bigint_reserve(limitless_ctx* ctx, limitless_
   limitless_size old_bytes;
   limitless_size new_bytes;
   void* mem;
-  if (need <= a->cap) return LIMITLESS_OK;
+  if (need == 0) return LIMITLESS_OK;
+  if (!a->limbs) a->cap = 0;
+  if (need <= a->cap && a->limbs) return LIMITLESS_OK;
   new_cap = (a->cap > 0) ? a->cap : (limitless_size)1;
   while (new_cap < need) {
     if (new_cap > ((~(limitless_size)0) / 2u)) {
@@ -389,11 +398,16 @@ static void limitless__bigint_clear_raw(limitless_ctx* ctx, limitless_bigint* a)
 static limitless_status limitless__bigint_copy(limitless_ctx* ctx, limitless_bigint* dst, const limitless_bigint* src) {
   limitless_status st;
   if (dst == src) return LIMITLESS_OK;
+  if (src->used > 0 && !src->limbs) return LIMITLESS_EINVAL;
+  if (src->used == 0) {
+    dst->used = 0;
+    dst->sign = 0;
+    return LIMITLESS_OK;
+  }
   st = limitless__bigint_reserve(ctx, dst, src->used);
   if (st != LIMITLESS_OK) return st;
-  if (src->used > 0) {
-    limitless__mem_copy(dst->limbs, src->limbs, src->used * (limitless_size)sizeof(limitless_limb));
-  }
+  if (!dst->limbs) return LIMITLESS_EOOM;
+  limitless__mem_copy(dst->limbs, src->limbs, src->used * (limitless_size)sizeof(limitless_limb));
   dst->used = src->used;
   dst->sign = src->sign;
   return LIMITLESS_OK;
@@ -414,6 +428,7 @@ static int limitless__bigint_is_one(const limitless_bigint* a) {
 }
 
 static limitless_size limitless__mag_used(const limitless_bigint* a) {
+  if (!a->limbs) return 0;
   limitless_size u = a->used;
   while (u > 0 && a->limbs[u - 1] == (limitless_limb)0) {
     --u;
@@ -505,7 +520,9 @@ static limitless_status limitless__bigint_abs_copy(limitless_ctx* ctx, limitless
 static limitless_status limitless__mag_add(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* a, const limitless_bigint* b) {
   limitless_size i;
   limitless_size max_used = (a->used > b->used) ? a->used : b->used;
-  limitless_status st = limitless__bigint_reserve(ctx, out, max_used + 1);
+  limitless_status st;
+  if (max_used == ~(limitless_size)0) return LIMITLESS_EOOM;
+  st = limitless__bigint_reserve(ctx, out, max_used + 1);
   limitless_dlimb carry = (limitless_dlimb)0;
   if (st != LIMITLESS_OK) return st;
   for (i = 0; i < max_used; ++i) {
@@ -1737,6 +1754,7 @@ LIMITLESS_API limitless_status limitless_number_from_cstr(limitless_ctx* ctx, li
   limitless_status st;
   const char* slash;
   const char* end;
+  const char* end2;
   if (!ctx || !out || !s) return LIMITLESS_EINVAL;
 
   st = limitless_number_init(ctx, &tmp);
@@ -1754,30 +1772,15 @@ LIMITLESS_API limitless_status limitless_number_from_cstr(limitless_ctx* ctx, li
       goto cleanup;
     }
   } else {
-    limitless_size left_len = (limitless_size)(slash - s);
-    char* left = (char*)limitless__alloc_bytes(ctx, left_len + 1);
-    const char* end2;
-    if (!left) {
-      st = LIMITLESS_EOOM;
-      goto cleanup;
-    }
-    limitless__mem_copy(left, s, left_len);
-    left[left_len] = '\0';
-
     tmp.kind = LIMITLESS_KIND_RAT;
     limitless__rational_init(&tmp.v.r);
 
-    st = limitless__bigint_from_base_digits(ctx, &tmp.v.r.num, left, base, &end);
-    if (st != LIMITLESS_OK) {
-      limitless__free_bytes(ctx, left, left_len + 1);
-      goto cleanup;
-    }
-    if (*end != '\0') {
-      limitless__free_bytes(ctx, left, left_len + 1);
+    st = limitless__bigint_from_base_digits(ctx, &tmp.v.r.num, s, base, &end);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (end != slash) {
       st = LIMITLESS_EPARSE;
       goto cleanup;
     }
-    limitless__free_bytes(ctx, left, left_len + 1);
 
     st = limitless__bigint_from_base_digits(ctx, &tmp.v.r.den, slash + 1, base, &end2);
     if (st != LIMITLESS_OK) goto cleanup;
