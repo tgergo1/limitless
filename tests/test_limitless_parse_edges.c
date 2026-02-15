@@ -37,6 +37,12 @@ static void test_valid_parse_cases(void) {
   assert(limitless_number_from_cstr(&ctx, &n, "-0", 0) == LIMITLESS_OK);
   expect_str(&ctx, &n, "0");
 
+  assert(limitless_number_from_cstr(&ctx, &n, "0/3", 0) == LIMITLESS_OK);
+  expect_str(&ctx, &n, "0");
+
+  assert(limitless_number_from_cstr(&ctx, &n, "-0/302864205528967743915270145433880631669", 0) == LIMITLESS_OK);
+  expect_str(&ctx, &n, "0");
+
   assert(limitless_number_from_cstr(&ctx, &n, "0x10", 0) == LIMITLESS_OK);
   expect_str(&ctx, &n, "16");
 

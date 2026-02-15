@@ -1323,6 +1323,7 @@ static limitless_status limitless__bigint_from_base_digits(limitless_ctx* ctx, l
   }
 
   if (actual_base == 0) {
+    int next_digit = -1;
     actual_base = 10;
     if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
       actual_base = 16;
@@ -1331,8 +1332,11 @@ static limitless_status limitless__bigint_from_base_digits(limitless_ctx* ctx, l
       actual_base = 2;
       p += 2;
     } else if (p[0] == '0' && p[1] != '\0') {
-      actual_base = 8;
-      p += 1;
+      next_digit = limitless__digit_val(p[1]);
+      if (next_digit >= 0 && next_digit < 8) {
+        actual_base = 8;
+        p += 1;
+      }
     }
   } else {
     if (actual_base == 16 && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) p += 2;
