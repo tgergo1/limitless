@@ -339,7 +339,7 @@ jobs:
           path: |
             ~/.cache/vcpkg/archives
             ~/vcpkg/downloads
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('packaging/vcpkg/ports/limitless/**', 'CMakeLists.txt', 'LIMITLESS_VERSION.txt', 'VERSION') }}
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('packaging/vcpkg/ports/limitless/**', 'CMakeLists.txt', 'limitless.h', 'limitless.hpp', 'LIMITLESS_VERSION.txt', 'VERSION') }}
 
       - name: Setup vcpkg
         if: matrix.vcpkg == true
