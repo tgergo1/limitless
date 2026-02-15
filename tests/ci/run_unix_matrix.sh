@@ -12,47 +12,59 @@ CXX_BIN="${CXX_BIN:-c++}"
 BUILD_DIR="$ROOT_DIR/build/ci/${MODE}"
 mkdir -p "$BUILD_DIR"
 
-CFLAGS_BASE="-std=c99 -Wall -Wextra -Werror -pedantic"
-CXXFLAGS_BASE="-std=c++11 -Wall -Wextra -Werror -pedantic"
-LDFLAGS_EXTRA=""
-CPP_EXTRA=""
-DEF_EXTRA=""
+CFLAGS_BASE=(
+  -std=c99
+  -Wall
+  -Wextra
+  -Werror
+  -pedantic
+)
+CXXFLAGS_BASE=(
+  -std=c++11
+  -Wall
+  -Wextra
+  -Werror
+  -pedantic
+)
+LDFLAGS_EXTRA=()
+CPP_EXTRA=()
+DEF_EXTRA=()
 DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-5000}"
 
 case "$MODE" in
   default)
     ;;
   limb64)
-    DEF_EXTRA="-DLIMITLESS_LIMB_BITS=64"
+    DEF_EXTRA+=(-DLIMITLESS_LIMB_BITS=64)
     ;;
   noexceptions)
-    CPP_EXTRA="-fno-exceptions"
+    CPP_EXTRA+=(-fno-exceptions)
     ;;
   m32)
-    CFLAGS_BASE="$CFLAGS_BASE -m32"
-    CXXFLAGS_BASE="$CXXFLAGS_BASE -m32"
-    LDFLAGS_EXTRA="-m32"
+    CFLAGS_BASE+=(-m32)
+    CXXFLAGS_BASE+=(-m32)
+    LDFLAGS_EXTRA+=(-m32)
     DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-1500}"
     ;;
   extended-stress)
-    DEF_EXTRA="-DLIMITLESS_EXTENDED_STRESS"
+    DEF_EXTRA+=(-DLIMITLESS_EXTENDED_STRESS)
     ;;
   asan-ubsan)
-    CFLAGS_BASE="$CFLAGS_BASE -fsanitize=address,undefined -fno-omit-frame-pointer"
-    CXXFLAGS_BASE="$CXXFLAGS_BASE -fsanitize=address,undefined -fno-omit-frame-pointer"
-    LDFLAGS_EXTRA="-fsanitize=address,undefined"
+    CFLAGS_BASE+=(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    CXXFLAGS_BASE+=(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    LDFLAGS_EXTRA+=(-fsanitize=address,undefined)
     DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-500}"
     ;;
   lsan)
-    CFLAGS_BASE="$CFLAGS_BASE -fsanitize=leak -fno-omit-frame-pointer"
-    CXXFLAGS_BASE="$CXXFLAGS_BASE -fsanitize=leak -fno-omit-frame-pointer"
-    LDFLAGS_EXTRA="-fsanitize=leak"
+    CFLAGS_BASE+=(-fsanitize=leak -fno-omit-frame-pointer)
+    CXXFLAGS_BASE+=(-fsanitize=leak -fno-omit-frame-pointer)
+    LDFLAGS_EXTRA+=(-fsanitize=leak)
     DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-500}"
     ;;
   tsan)
-    CFLAGS_BASE="$CFLAGS_BASE -fsanitize=thread -fno-omit-frame-pointer"
-    CXXFLAGS_BASE="$CXXFLAGS_BASE -fsanitize=thread -fno-omit-frame-pointer"
-    LDFLAGS_EXTRA="-fsanitize=thread"
+    CFLAGS_BASE+=(-fsanitize=thread -fno-omit-frame-pointer)
+    CXXFLAGS_BASE+=(-fsanitize=thread -fno-omit-frame-pointer)
+    LDFLAGS_EXTRA+=(-fsanitize=thread)
     DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-500}"
     ;;
   *)
@@ -64,19 +76,19 @@ esac
 compile_c() {
   local out="$1"
   shift
-  "$CC_BIN" $CFLAGS_BASE $DEF_EXTRA "$@" $LDFLAGS_EXTRA -o "$out"
+  "$CC_BIN" "${CFLAGS_BASE[@]}" "${DEF_EXTRA[@]-}" "$@" "${LDFLAGS_EXTRA[@]-}" -o "$out"
 }
 
 compile_cpp() {
   local out="$1"
   shift
-  "$CXX_BIN" $CXXFLAGS_BASE $CPP_EXTRA $DEF_EXTRA "$@" $LDFLAGS_EXTRA -o "$out"
+  "$CXX_BIN" "${CXXFLAGS_BASE[@]}" "${CPP_EXTRA[@]-}" "${DEF_EXTRA[@]-}" "$@" "${LDFLAGS_EXTRA[@]-}" -o "$out"
 }
 
 compile_cpp_allow_deprecated() {
   local out="$1"
   shift
-  "$CXX_BIN" $CXXFLAGS_BASE $CPP_EXTRA $DEF_EXTRA -Wno-error=deprecated-declarations "$@" $LDFLAGS_EXTRA -o "$out"
+  "$CXX_BIN" "${CXXFLAGS_BASE[@]}" "${CPP_EXTRA[@]-}" "${DEF_EXTRA[@]-}" -Wno-error=deprecated-declarations "$@" "${LDFLAGS_EXTRA[@]-}" -o "$out"
 }
 
 if [[ "$MODE" == "extended-stress" ]]; then

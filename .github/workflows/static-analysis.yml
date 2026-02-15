@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@60d8f0d1f1f8c8d07ef53bd027032705d414ec28
+        uses: github/codeql-action/init@f5c2471be782132e47a6e6f9c725e56730d6e9a3
         with:
           languages: c-cpp
 
@@ -44,7 +44,7 @@ jobs:
           CC_BIN=gcc-13 CXX_BIN=g++-13 LIMITLESS_DIFF_ITERS=200 bash tests/ci/run_unix_matrix.sh default
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@60d8f0d1f1f8c8d07ef53bd027032705d414ec28
+        uses: github/codeql-action/analyze@f5c2471be782132e47a6e6f9c725e56730d6e9a3
 
   clang-analyze:
     name: clang-analyze

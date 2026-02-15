@@ -473,9 +473,14 @@ static int limitless__bigint_cmp_signed(const limitless_bigint* a, const limitle
 static limitless_status limitless__bigint_set_u64(limitless_ctx* ctx, limitless_bigint* a, limitless_u64 v) {
   limitless_status st;
 #if (LIMITLESS_LIMB_BITS == LIMITLESS_LIMB_BITS_32)
-  limitless_size need = (v > 0xffffffffULL) ? (limitless_size)2 : (v ? (limitless_size)1 : (limitless_size)0);
+  limitless_size need = 0;
+  if (v > 0xffffffffULL) {
+    need = (limitless_size)2;
+  } else if (v != 0ULL) {
+    need = (limitless_size)1;
+  }
 #else
-  limitless_size need = (v ? (limitless_size)1 : (limitless_size)0);
+  limitless_size need = (v != 0ULL) ? (limitless_size)1 : (limitless_size)0;
 #endif
   st = limitless__bigint_reserve(ctx, a, need);
   if (st != LIMITLESS_OK) return st;
@@ -1323,7 +1328,6 @@ static limitless_status limitless__bigint_from_base_digits(limitless_ctx* ctx, l
   }
 
   if (actual_base == 0) {
-    int next_digit = -1;
     actual_base = 10;
     if (p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
       actual_base = 16;
@@ -1332,7 +1336,7 @@ static limitless_status limitless__bigint_from_base_digits(limitless_ctx* ctx, l
       actual_base = 2;
       p += 2;
     } else if (p[0] == '0' && p[1] != '\0') {
-      next_digit = limitless__digit_val(p[1]);
+      int next_digit = limitless__digit_val(p[1]);
       if (next_digit >= 0 && next_digit < 8) {
         actual_base = 8;
         p += 1;

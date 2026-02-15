@@ -115,18 +115,21 @@ cmake --build "$VERIFY_ROOT/build"
 PKG_PATHS=()
 [[ -d "$VERIFY_ROOT/install-root/lib/pkgconfig" ]] && PKG_PATHS+=("$VERIFY_ROOT/install-root/lib/pkgconfig")
 [[ -d "$VERIFY_ROOT/install-root/lib64/pkgconfig" ]] && PKG_PATHS+=("$VERIFY_ROOT/install-root/lib64/pkgconfig")
-export PKG_CONFIG_PATH="$(IFS=:; echo "${PKG_PATHS[*]:-}")"
+PKG_CONFIG_PATH_VALUE="$(IFS=:; echo "${PKG_PATHS[*]:-}")"
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH_VALUE"
 
 if [[ -n "$PKG_CONFIG_PATH" && -x "$(command -v pkg-config || true)" ]]; then
+  PKG_CFLAGS=()
+  read -r -a PKG_CFLAGS <<< "$(pkg-config --cflags limitless)"
   "$CC_BIN" -std=c99 -Wall -Wextra -Werror -pedantic \
-    $(pkg-config --cflags limitless) \
+    "${PKG_CFLAGS[@]}" \
     "$VERIFY_ROOT/main.c" \
     "$VERIFY_ROOT/limitless_impl.c" \
     -o "$VERIFY_ROOT/pkg_consumer_c"
   "$VERIFY_ROOT/pkg_consumer_c"
 
   "$CXX_BIN" -std=c++11 -Wall -Wextra -Werror -pedantic \
-    $(pkg-config --cflags limitless) \
+    "${PKG_CFLAGS[@]}" \
     "$VERIFY_ROOT/main.cpp" \
     "$VERIFY_ROOT/limitless_impl.cpp" \
     -o "$VERIFY_ROOT/pkg_consumer_cpp"

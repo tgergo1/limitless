@@ -77,18 +77,21 @@ cmake --build "$BUILD_ROOT/consumer-cmake/build"
 PKG_PATHS=()
 [[ -d "$INSTALL_ROOT/lib/pkgconfig" ]] && PKG_PATHS+=("$INSTALL_ROOT/lib/pkgconfig")
 [[ -d "$INSTALL_ROOT/lib64/pkgconfig" ]] && PKG_PATHS+=("$INSTALL_ROOT/lib64/pkgconfig")
-export PKG_CONFIG_PATH="$(IFS=:; echo "${PKG_PATHS[*]:-}")"
+PKG_CONFIG_PATH_VALUE="$(IFS=:; echo "${PKG_PATHS[*]:-}")"
+export PKG_CONFIG_PATH="$PKG_CONFIG_PATH_VALUE"
 pkg-config --cflags --libs limitless >/dev/null
+PKG_CFLAGS=()
+read -r -a PKG_CFLAGS <<< "$(pkg-config --cflags limitless)"
 
 "$CC_BIN" -std=c99 -Wall -Wextra -Werror -pedantic \
-  $(pkg-config --cflags limitless) \
+  "${PKG_CFLAGS[@]}" \
   "$BUILD_ROOT/consumer-cmake/main.c" \
   "$BUILD_ROOT/consumer-cmake/limitless_impl.c" \
   -o "$BUILD_ROOT/pkg-config-consumer-c"
 "$BUILD_ROOT/pkg-config-consumer-c"
 
 "$CXX_BIN" -std=c++11 -Wall -Wextra -Werror -pedantic \
-  $(pkg-config --cflags limitless) \
+  "${PKG_CFLAGS[@]}" \
   "$BUILD_ROOT/consumer-cmake/main.cpp" \
   "$BUILD_ROOT/consumer-cmake/limitless_impl.cpp" \
   -o "$BUILD_ROOT/pkg-config-consumer-cpp"

@@ -14,26 +14,42 @@ GCOVR_PARSE_POLICY="${GCOVR_PARSE_POLICY:-negative_hits.warn_once_per_file}"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 
-CFLAGS_BASE="-std=c99 -Wall -Wextra -Werror -pedantic -O0 --coverage"
-CXXFLAGS_BASE="-std=c++11 -Wall -Wextra -Werror -pedantic -O0 --coverage"
-LDFLAGS_EXTRA="--coverage"
+CFLAGS_BASE=(
+  -std=c99
+  -Wall
+  -Wextra
+  -Werror
+  -pedantic
+  -O0
+  --coverage
+)
+CXXFLAGS_BASE=(
+  -std=c++11
+  -Wall
+  -Wextra
+  -Werror
+  -pedantic
+  -O0
+  --coverage
+)
+LDFLAGS_EXTRA=(--coverage)
 
 compile_c() {
   local out="$1"
   shift
-  "$CC_BIN" $CFLAGS_BASE "$@" $LDFLAGS_EXTRA -o "$out"
+  "$CC_BIN" "${CFLAGS_BASE[@]}" "$@" "${LDFLAGS_EXTRA[@]}" -o "$out"
 }
 
 compile_cpp() {
   local out="$1"
   shift
-  "$CXX_BIN" $CXXFLAGS_BASE "$@" $LDFLAGS_EXTRA -o "$out"
+  "$CXX_BIN" "${CXXFLAGS_BASE[@]}" "$@" "${LDFLAGS_EXTRA[@]}" -o "$out"
 }
 
 compile_cpp_allow_deprecated() {
   local out="$1"
   shift
-  "$CXX_BIN" $CXXFLAGS_BASE -Wno-error=deprecated-declarations "$@" $LDFLAGS_EXTRA -o "$out"
+  "$CXX_BIN" "${CXXFLAGS_BASE[@]}" -Wno-error=deprecated-declarations "$@" "${LDFLAGS_EXTRA[@]}" -o "$out"
 }
 
 compile_c "$BUILD_DIR/test_limitless_c_basic" tests/test_limitless.c

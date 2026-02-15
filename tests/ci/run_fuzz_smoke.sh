@@ -17,7 +17,9 @@ COMMON_FLAGS=(
   -pedantic
   -O1
   -fno-omit-frame-pointer
-  -fsanitize=fuzzer,address,undefined
+  -fsanitize=fuzzer
+  -fsanitize=address
+  -fsanitize=undefined
 )
 
 build_and_run() {
