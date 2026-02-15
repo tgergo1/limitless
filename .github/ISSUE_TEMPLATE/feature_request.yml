@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Feature request
+description: Request an API, tooling, CI, or docs enhancement.
+title: "feature: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What limitation are you hitting?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Be explicit about API shape, behavior, and tradeoffs.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing workarounds or competing options.

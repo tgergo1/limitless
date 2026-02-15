@@ -4,6 +4,7 @@
 #include <cstring>
 #include <string>
 
+#define LIMITLESS_CPP_NO_LEGACY_DEPRECATION 1
 #define LIMITLESS_IMPLEMENTATION
 #include "../limitless.hpp"
 
@@ -60,6 +61,19 @@ int main() {
     assert(!(3 < p));
     assert(p != 2);
     assert(p == limitless_number::parse("7/3"));
+    assert(limitless_cpp_last_status() == LIMITLESS_OK);
+  }
+
+  {
+    limitless::limitless_cpp_set_default_ctx(&ctx);
+    limitless::number p = limitless::number::parse("7/3", 10);
+    assert(limitless::limitless_cpp_last_status() == LIMITLESS_OK);
+    limitless::number q = 2 + p;
+    assert(limitless::limitless_cpp_last_status() == LIMITLESS_OK);
+    assert(q.str() == "13/3");
+
+    limitless_number legacy = q;
+    assert(legacy.str() == "13/3");
     assert(limitless_cpp_last_status() == LIMITLESS_OK);
   }
 

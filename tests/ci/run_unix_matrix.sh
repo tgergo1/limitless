@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
+python3 tools/check_reserved_filenames.py
 
 MODE="${1:-default}"
 CC_BIN="${CC_BIN:-cc}"
@@ -16,7 +17,7 @@ CXXFLAGS_BASE="-std=c++11 -Wall -Wextra -Werror -pedantic"
 LDFLAGS_EXTRA=""
 CPP_EXTRA=""
 DEF_EXTRA=""
-DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-3000}"
+DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-5000}"
 
 case "$MODE" in
   default)
@@ -72,6 +73,12 @@ compile_cpp() {
   "$CXX_BIN" $CXXFLAGS_BASE $CPP_EXTRA $DEF_EXTRA "$@" $LDFLAGS_EXTRA -o "$out"
 }
 
+compile_cpp_allow_deprecated() {
+  local out="$1"
+  shift
+  "$CXX_BIN" $CXXFLAGS_BASE $CPP_EXTRA $DEF_EXTRA -Wno-error=deprecated-declarations "$@" $LDFLAGS_EXTRA -o "$out"
+}
+
 if [[ "$MODE" == "extended-stress" ]]; then
   compile_c "$BUILD_DIR/test_limitless_generated_stress" tests/test_limitless_generated.c
   "$BUILD_DIR/test_limitless_generated_stress"
@@ -86,6 +93,18 @@ compile_c "$BUILD_DIR/test_limitless_c_basic" tests/test_limitless.c
 
 compile_c "$BUILD_DIR/test_limitless_api" tests/test_limitless_api.c
 "$BUILD_DIR/test_limitless_api"
+
+compile_c "$BUILD_DIR/test_limitless_parse_edges" tests/test_limitless_parse_edges.c
+"$BUILD_DIR/test_limitless_parse_edges"
+
+compile_c "$BUILD_DIR/test_limitless_conversion_edges" tests/test_limitless_conversion_edges.c
+"$BUILD_DIR/test_limitless_conversion_edges"
+
+compile_c "$BUILD_DIR/test_limitless_invariants" tests/test_limitless_invariants.c
+"$BUILD_DIR/test_limitless_invariants"
+
+compile_c "$BUILD_DIR/test_limitless_allocator_contract" tests/test_limitless_allocator_contract.c
+"$BUILD_DIR/test_limitless_allocator_contract"
 
 compile_c "$BUILD_DIR/test_limitless_parser_fuzz" tests/test_limitless_parser_fuzz.c
 "$BUILD_DIR/test_limitless_parser_fuzz"
@@ -108,11 +127,25 @@ compile_cpp "$BUILD_DIR/test_limitless_cpp_basic" tests/test_limitless_cpp.cpp
 compile_cpp "$BUILD_DIR/test_limitless_cpp_generated" tests/test_limitless_cpp_generated.cpp
 "$BUILD_DIR/test_limitless_cpp_generated"
 
+compile_cpp "$BUILD_DIR/test_cpp_namespace_strict" tests/test_cpp_namespace_strict.cpp
+"$BUILD_DIR/test_cpp_namespace_strict"
+
+compile_cpp_allow_deprecated "$BUILD_DIR/test_cpp_legacy_bridge" tests/test_cpp_legacy_bridge.cpp
+"$BUILD_DIR/test_cpp_legacy_bridge"
+
 compile_cpp "$BUILD_DIR/test_limitless_threads" tests/test_limitless_threads.cpp
 "$BUILD_DIR/test_limitless_threads"
 
+compile_cpp "$BUILD_DIR/test_limitless_threads_c_api" tests/test_limitless_threads_c_api.cpp
+"$BUILD_DIR/test_limitless_threads_c_api"
+
+compile_cpp "$BUILD_DIR/test_limitless_cpp_cross_thread_status" tests/test_limitless_cpp_cross_thread_status.cpp
+"$BUILD_DIR/test_limitless_cpp_cross_thread_status"
+
 compile_cpp "$BUILD_DIR/test_include_repo_root" -I"$ROOT_DIR" tests/test_include_repo_root.cpp
 "$BUILD_DIR/test_include_repo_root"
+
+bash tests/ci/run_negative_compile.sh
 
 compile_c "$BUILD_DIR/limitless_cli" tests/ci/limitless_cli.c
 bash tests/ci/run_differential.sh "$BUILD_DIR/limitless_cli" "$DIFF_ITERS"

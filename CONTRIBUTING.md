@@ -14,6 +14,7 @@ Run from repository root.
 
 ```sh
 python3 tools/check_version.py
+python3 tools/check_reserved_filenames.py
 
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh limb64
@@ -21,6 +22,15 @@ CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh noexceptions
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh asan-ubsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh lsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh tsan
+
+bash tests/ci/run_negative_compile.sh
+bash tests/ci/run_clang_analyze.sh
+bash tests/ci/run_clang_tidy.sh
+bash tests/ci/run_cppcheck.sh
+bash tests/ci/run_repo_lint.sh
+bash tests/ci/check_spdx_headers.sh
+bash tests/ci/run_fuzz_smoke.sh
+bash tests/ci/run_bench_regression.sh
 ```
 
 `m32`, `lsan`, and `tsan` availability depends on host toolchain support (fully covered in GitHub CI).
@@ -75,6 +85,8 @@ bash tests/ci/run_differential.sh /tmp/limitless_cli 5000
 - Packaging metadata updated if install surface changed.
 - README and changelog updated for user-visible changes.
 - Version files/macros kept consistent (`python3 tools/check_version.py`).
+- Namespace migration impact considered (`docs/MIGRATION_CPP_NAMESPACE.md`).
+- Required status checks pass (`docs/RELEASE_CHECKLIST.md`).
 
 ## Branch protection recommendation
 

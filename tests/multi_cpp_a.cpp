@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include <cassert>
+#define LIMITLESS_CPP_NO_LEGACY_DEPRECATION 1
 #include "../limitless.hpp"
 
 limitless_ctx* tests_cpp_get_default_ctx_b(void);

@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Gitleaks
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc
+
+  security-gate:
+    name: security-gate
+    runs-on: ubuntu-latest
+    needs: [gitleaks]
+    if: always()
+    steps:
+      - name: Evaluate Security Gate
+        env:
+          GITLEAKS_RESULT: ${{ needs.gitleaks.result }}
+        run: |
+          [[ "$GITLEAKS_RESULT" == "success" ]]

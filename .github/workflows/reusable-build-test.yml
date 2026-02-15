@@ -34,6 +34,9 @@ on:
         default: ""
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
     name: ${{ inputs.os }} / ${{ inputs.family }} / ${{ inputs.mode }}
@@ -41,10 +44,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.11"
 
@@ -54,7 +57,7 @@ jobs:
 
       - name: Setup GCC
         if: runner.os == 'Linux' && inputs.family == 'gcc'
-        uses: egor-tensin/setup-gcc@v1
+        uses: egor-tensin/setup-gcc@eaa888eb19115a521fa72b65cd94fe1f25bbcaac
         with:
           version: ${{ inputs.gcc-version }}
 
@@ -86,11 +89,11 @@ jobs:
 
       - name: Setup MSVC Environment
         if: runner.os == 'Windows' && (inputs.family == 'msvc' || inputs.family == 'clang-cl')
-        uses: ilammy/msvc-dev-cmd@v1
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
 
       - name: Setup MSYS2
         if: runner.os == 'Windows' && inputs.family == 'mingw'
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda
         with:
           msystem: MINGW64
           update: true
@@ -106,7 +109,9 @@ jobs:
           echo "CXX_BIN=${{ inputs.cxx }}" >> "$GITHUB_ENV"
 
       - name: Check Version Consistency
-        run: python3 tools/check_version.py
+        run: |
+          python3 tools/check_version.py
+          python3 tools/check_reserved_filenames.py
 
       - name: Run Unix Matrix Script
         if: runner.os != 'Windows'

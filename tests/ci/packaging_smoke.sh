@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
+python3 tools/check_reserved_filenames.py
 
 read_version_file() {
   if [[ -f "LIMITLESS_VERSION.txt" ]]; then
@@ -58,9 +59,9 @@ cat > "$BUILD_ROOT/consumer-cmake/main.cpp" <<'CPP_EOF'
 #include "limitless.hpp"
 
 int main() {
-  limitless_number a = limitless_number::parse("7/3", 10);
-  limitless_number b = 2;
-  limitless_number c = a + b;
+  limitless::number a = limitless::number::parse("7/3", 10);
+  limitless::number b = 2;
+  limitless::number c = a + b;
   return c.str() == "13/3" ? 0 : 1;
 }
 CPP_EOF

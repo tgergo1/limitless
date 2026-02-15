@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Dependency Review
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  dependency-review:
+    name: dependency-review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Dependency Review
+        uses: actions/dependency-review-action@46a3c492319c890177366b6ef46d6b4f89743ed4

@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: GPL-3.0-only
+extends: default
+
+rules:
+  line-length:
+    max: 200
+    level: warning
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']
+  comments-indentation: disable

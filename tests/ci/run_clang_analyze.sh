@@ -63,6 +63,11 @@ analyze_cpp() {
   run_and_enforce_clean "$src" "$CLANGXX_BIN" --analyze "${CXXFLAGS_BASE[@]}" "${ANALYZER_FLAGS[@]}" "$src"
 }
 
+analyze_cpp_allow_deprecated() {
+  local src="$1"
+  run_and_enforce_clean "$src" "$CLANGXX_BIN" --analyze "${CXXFLAGS_BASE[@]}" -Wno-error=deprecated-declarations -Wno-deprecated-declarations "${ANALYZER_FLAGS[@]}" "$src"
+}
+
 analyze_cpp_with_repo_include() {
   local src="$1"
   run_and_enforce_clean "$src" "$CLANGXX_BIN" --analyze "${CXXFLAGS_BASE[@]}" "${ANALYZER_FLAGS[@]}" -I"$ROOT_DIR" "$src"
@@ -71,6 +76,10 @@ analyze_cpp_with_repo_include() {
 for src in \
   tests/test_limitless.c \
   tests/test_limitless_api.c \
+  tests/test_limitless_parse_edges.c \
+  tests/test_limitless_conversion_edges.c \
+  tests/test_limitless_invariants.c \
+  tests/test_limitless_allocator_contract.c \
   tests/test_limitless_generated.c \
   tests/test_limitless_parser_fuzz.c \
   tests/test_default_allocator_override.c \
@@ -85,7 +94,10 @@ done
 for src in \
   tests/test_limitless_cpp.cpp \
   tests/test_limitless_cpp_generated.cpp \
+  tests/test_cpp_namespace_strict.cpp \
   tests/test_limitless_threads.cpp \
+  tests/test_limitless_threads_c_api.cpp \
+  tests/test_limitless_cpp_cross_thread_status.cpp \
   tests/multi_cpp_impl.cpp \
   tests/multi_cpp_a.cpp \
   tests/multi_cpp_b.cpp
@@ -93,6 +105,8 @@ for src in \
 do
   analyze_cpp "$src"
 done
+
+analyze_cpp_allow_deprecated tests/test_cpp_legacy_bridge.cpp
 
 analyze_cpp_with_repo_include tests/test_include_repo_root.cpp
 

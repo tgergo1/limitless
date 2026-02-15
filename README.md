@@ -26,7 +26,7 @@ Current line: `experimental`, version `0.1.0`.
 ## What is in this repo
 
 - `limitless.h`: C API + implementation (`#define LIMITLESS_IMPLEMENTATION` in one TU)
-- `limitless.hpp`: C++ wrapper with operators and RAII on top of the C API
+- `limitless.hpp`: C++ wrapper (`limitless::number`) with operators and RAII on top of the C API
 - `tests/`: baseline tests, generated matrix tests, stress tests, CI wrappers
   - API completeness + alias/failure-atomic tests
   - parser fuzz + valid roundtrip stress
@@ -77,11 +77,15 @@ int main(void) {
 
 int main() {
   int a = 3;
-  limitless_number x = 33424234;
-  limitless_number y = (x + a) / 2.3f;
+  limitless::number x = 33424234;
+  limitless::number y = (x + a) / 2.3f;
   return y.str() == "140191410946048/9646899" ? 0 : 1;
 }
 ```
+
+Legacy global wrapper names are currently bridged for compatibility. Prefer `limitless::number` and `limitless::limitless_cpp_*`.
+Strict mode is available via `#define LIMITLESS_CPP_LEGACY_API 0` before including `limitless.hpp`.
+Migration details: `docs/MIGRATION_CPP_NAMESPACE.md`.
 
 ## When this is practical
 
@@ -190,9 +194,9 @@ int main(void) {
 #include "limitless.hpp"
 
 int main() {
-  limitless_number a = limitless_number::parse("7/3");
-  limitless_number b = 2;
-  limitless_number c = (10 + a) * b;
+  limitless::number a = limitless::number::parse("7/3");
+  limitless::number b = 2;
+  limitless::number c = (10 + a) * b;
   bool larger = c > a;
   return larger && c.str() == "74/3" ? 0 : 1;
 }
@@ -270,6 +274,18 @@ CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=800 bash tests/ci/run_coverage.sh
 ```
 
 coverage report scope is the core C header implementation (`limitless.h`).
+
+additional quality checks:
+
+```sh
+bash tests/ci/run_negative_compile.sh
+bash tests/ci/run_clang_analyze.sh
+bash tests/ci/run_clang_tidy.sh
+bash tests/ci/run_cppcheck.sh
+bash tests/ci/run_repo_lint.sh
+bash tests/ci/run_fuzz_smoke.sh
+bash tests/ci/run_bench_regression.sh
+```
 
 packaging smoke checks:
 

@@ -20,15 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.11"
       - name: Validate Tag And Metadata Versions
-        run: python3 tools/check_version.py "${GITHUB_REF_NAME}"
+        run: |
+          python3 tools/check_version.py "${GITHUB_REF_NAME}"
+          python3 tools/check_reserved_filenames.py
 
   build-test:
     name: ${{ matrix.os }} / ${{ matrix.family }} / ${{ matrix.mode }}
@@ -236,7 +238,7 @@ jobs:
       - name: Install Dependencies
         run: apk add --no-cache bash build-base git python3
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Run Musl Matrix Script
         run: |
           CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
@@ -247,9 +249,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Run Big Endian Emulation
-        uses: uraimo/run-on-arch-action@v2
+        uses: uraimo/run-on-arch-action@ac33288c3728ca72563c97b8b88dda5a65a84448
         with:
           arch: s390x
           distro: alpine_latest
@@ -260,36 +262,79 @@ jobs:
             CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
 
   packaging-smoke:
-    name: packaging-smoke
-    runs-on: ubuntu-latest
+    name: packaging-smoke / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     needs: verify-version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            conan: true
+            vcpkg: true
+          - os: macos-latest
+            conan: true
+            vcpkg: false
+          - os: windows-latest
+            conan: false
+            vcpkg: false
+            windows-msys: true
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.11"
 
+      - name: Setup MSYS2
+        if: matrix.windows-msys == true
+        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-python
+            git
+            bash
+
       - name: Prepare Linux APT Sources
+        if: runner.os == 'Linux'
         run: bash tests/ci/apt_prepare_ubuntu.sh
 
-      - name: Install Tooling
+      - name: Install Linux Tooling
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y pkg-config ninja-build
           python3 -m pip install --upgrade pip
+
+      - name: Install macOS Tooling
+        if: runner.os == 'macOS'
+        run: |
+          brew install pkg-config ninja
+          python3 -m pip install --upgrade pip
+
+      - name: Install Conan
+        if: matrix.conan == true
+        run: |
           python3 -m pip install conan
 
       - name: Cache Conan
-        uses: actions/cache@v4
+        if: matrix.conan == true
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.conan2
           key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'LIMITLESS_VERSION.txt', 'VERSION') }}
 
       - name: Cache vcpkg
-        uses: actions/cache@v4
+        if: matrix.vcpkg == true
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cache/vcpkg/archives
@@ -297,6 +342,7 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('packaging/vcpkg/ports/limitless/**', 'CMakeLists.txt', 'LIMITLESS_VERSION.txt', 'VERSION') }}
 
       - name: Setup vcpkg
+        if: matrix.vcpkg == true
         run: |
           rm -rf "$HOME/vcpkg"
           git clone --depth 1 https://github.com/microsoft/vcpkg "$HOME/vcpkg"
@@ -305,8 +351,15 @@ jobs:
           echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
           echo "VCPKG_DEFAULT_BINARY_CACHE=$HOME/.cache/vcpkg/archives" >> "$GITHUB_ENV"
 
-      - name: Packaging Smoke Test
+      - name: Packaging Smoke Test (Unix)
+        if: matrix.windows-msys != true
         run: bash tests/ci/packaging_smoke.sh
+
+      - name: Packaging Smoke Test (Windows MSYS2)
+        if: matrix.windows-msys == true
+        shell: msys2 {0}
+        run: |
+          CC_BIN=gcc CXX_BIN=g++ bash tests/ci/packaging_smoke.sh
 
   assemble-release:
     runs-on: ubuntu-latest
@@ -318,17 +371,26 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.11"
 
+      - name: Prepare Linux APT Sources
+        run: bash tests/ci/apt_prepare_ubuntu.sh
+
+      - name: Install Verify Tooling
+        run: |
+          sudo apt-get install -y pkg-config
+
       - name: Validate Versions Again
-        run: python3 tools/check_version.py "${GITHUB_REF_NAME}"
+        run: |
+          python3 tools/check_version.py "${GITHUB_REF_NAME}"
+          python3 tools/check_reserved_filenames.py
 
       - name: Build Release Artifacts
         run: |
@@ -359,13 +421,13 @@ jobs:
         run: bash tests/ci/verify_release_artifacts.sh dist "${LIMITLESS_VERSION}"
 
       - name: Upload Release Artifacts (workflow)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: release-assets
           path: dist/*
 
       - name: Attest Build Provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45
         with:
           subject-path: |
             dist/limitless-*.tar.gz
@@ -374,7 +436,7 @@ jobs:
             dist/SHA256SUMS
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
         with:
           body_path: dist/RELEASE_NOTES.md
           prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}

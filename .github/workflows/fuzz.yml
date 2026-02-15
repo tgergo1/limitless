@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Fuzz
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * *"
+
+concurrency:
+  group: fuzz-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz-smoke:
+    name: fuzz-smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Prepare Linux APT Sources
+        run: bash tests/ci/apt_prepare_ubuntu.sh
+
+      - name: Install Clang Toolchain
+        run: |
+          sudo apt-get install -y clang lld
+
+      - name: Run Fuzz Smoke
+        run: |
+          CLANGXX_BIN=clang++ bash tests/ci/run_fuzz_smoke.sh
+
+  fuzz-gate:
+    name: fuzz-gate
+    runs-on: ubuntu-latest
+    needs: [fuzz-smoke]
+    if: always()
+    steps:
+      - name: Evaluate Fuzz Gate
+        run: |
+          if [[ "${{ needs.fuzz-smoke.result }}" != "success" ]]; then
+            echo "fuzz smoke did not succeed" >&2
+            exit 1
+          fi

@@ -13,9 +13,30 @@
 #error "include limitless.hpp before limitless.h in C++ files"
 #endif
 
+#ifndef LIMITLESS_CPP_LEGACY_API
+#define LIMITLESS_CPP_LEGACY_API 1
+#endif
+
+#ifndef LIMITLESS_CPP_DEPRECATED_FN
+#if defined(_MSC_VER)
+#define LIMITLESS_CPP_DEPRECATED_FN(msg) __declspec(deprecated(msg))
+#elif defined(__clang__) || defined(__GNUC__)
+#define LIMITLESS_CPP_DEPRECATED_FN(msg) __attribute__((deprecated(msg)))
+#else
+#define LIMITLESS_CPP_DEPRECATED_FN(msg)
+#endif
+#endif
+
+#if defined(LIMITLESS_CPP_NO_LEGACY_DEPRECATION)
+#undef LIMITLESS_CPP_DEPRECATED_FN
+#define LIMITLESS_CPP_DEPRECATED_FN(msg)
+#endif
+
 #define limitless_number limitless_c_number
 #include "limitless.h"
 #undef limitless_number
+
+namespace limitless {
 
 /*
 TU-coherence note:
@@ -375,6 +396,9 @@ private:
   limitless_ctx* owner_ctx_;
 };
 
+/* Preferred namespaced type alias for C++ users. */
+using number = limitless_number;
+
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, limitless_number>::type
 operator+(T lhs, const limitless_number& rhs) {
@@ -434,5 +458,31 @@ inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator>=(T lhs, const limitless_number& rhs) {
   return limitless_number(lhs) >= rhs;
 }
+
+} /* namespace limitless */
+
+/*
+Compatibility layer:
+Keep legacy global C++ symbols available while preferring namespace usage.
+Target removal for legacy global names: v0.3.0.
+*/
+#if LIMITLESS_CPP_LEGACY_API
+typedef ::limitless::number limitless_number;
+
+LIMITLESS_CPP_DEPRECATED_FN("use limitless::limitless_cpp_set_default_ctx (legacy global wrapper scheduled for removal in v0.3.0)")
+inline void limitless_cpp_set_default_ctx(limitless_ctx* ctx) {
+  ::limitless::limitless_cpp_set_default_ctx(ctx);
+}
+
+LIMITLESS_CPP_DEPRECATED_FN("use limitless::limitless_cpp_get_default_ctx (legacy global wrapper scheduled for removal in v0.3.0)")
+inline limitless_ctx* limitless_cpp_get_default_ctx(void) {
+  return ::limitless::limitless_cpp_get_default_ctx();
+}
+
+LIMITLESS_CPP_DEPRECATED_FN("use limitless::limitless_cpp_last_status (legacy global wrapper scheduled for removal in v0.3.0)")
+inline limitless_status limitless_cpp_last_status(void) {
+  return ::limitless::limitless_cpp_last_status();
+}
+#endif
 
 #endif /* LIMITLESS_HPP */

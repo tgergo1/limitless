@@ -6,6 +6,7 @@
 #include <thread>
 #include <vector>
 
+#define LIMITLESS_CPP_NO_LEGACY_DEPRECATION 1
 #define LIMITLESS_IMPLEMENTATION
 #include "../limitless.hpp"
 

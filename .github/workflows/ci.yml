@@ -11,6 +11,9 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build-test:
     name: ${{ matrix.os }} / ${{ matrix.family }} / ${{ matrix.mode }}
@@ -216,7 +219,7 @@ jobs:
       - name: Install Dependencies
         run: apk add --no-cache bash build-base git python3
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Run Musl Matrix Script
         run: |
           CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
@@ -226,9 +229,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Run Big Endian Emulation
-        uses: uraimo/run-on-arch-action@v2
+        uses: uraimo/run-on-arch-action@ac33288c3728ca72563c97b8b88dda5a65a84448
         with:
           arch: s390x
           distro: alpine_latest
@@ -239,35 +242,78 @@ jobs:
             CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
 
   packaging-smoke:
-    name: packaging-smoke
-    runs-on: ubuntu-latest
+    name: packaging-smoke / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            conan: true
+            vcpkg: true
+          - os: macos-latest
+            conan: true
+            vcpkg: false
+          - os: windows-latest
+            conan: false
+            vcpkg: false
+            windows-msys: true
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.11"
 
+      - name: Setup MSYS2
+        if: matrix.windows-msys == true
+        uses: msys2/setup-msys2@4f806de0a5a7294ffabaff804b38a9b435a73bda
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-pkgconf
+            mingw-w64-x86_64-ninja
+            mingw-w64-x86_64-python
+            git
+            bash
+
       - name: Prepare Linux APT Sources
+        if: runner.os == 'Linux'
         run: bash tests/ci/apt_prepare_ubuntu.sh
 
-      - name: Install Tooling
+      - name: Install Linux Tooling
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y pkg-config ninja-build
           python3 -m pip install --upgrade pip
+
+      - name: Install macOS Tooling
+        if: runner.os == 'macOS'
+        run: |
+          brew install pkg-config ninja
+          python3 -m pip install --upgrade pip
+
+      - name: Install Conan
+        if: matrix.conan == true
+        run: |
           python3 -m pip install conan
 
       - name: Cache Conan
-        uses: actions/cache@v4
+        if: matrix.conan == true
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.conan2
           key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'LIMITLESS_VERSION.txt', 'VERSION') }}
 
       - name: Cache vcpkg
-        uses: actions/cache@v4
+        if: matrix.vcpkg == true
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ~/.cache/vcpkg/archives
@@ -275,6 +321,7 @@ jobs:
           key: vcpkg-${{ runner.os }}-${{ hashFiles('packaging/vcpkg/ports/limitless/**', 'CMakeLists.txt', 'LIMITLESS_VERSION.txt', 'VERSION') }}
 
       - name: Setup vcpkg
+        if: matrix.vcpkg == true
         run: |
           rm -rf "$HOME/vcpkg"
           git clone --depth 1 https://github.com/microsoft/vcpkg "$HOME/vcpkg"
@@ -283,5 +330,64 @@ jobs:
           echo "VCPKG_ROOT=$HOME/vcpkg" >> "$GITHUB_ENV"
           echo "VCPKG_DEFAULT_BINARY_CACHE=$HOME/.cache/vcpkg/archives" >> "$GITHUB_ENV"
 
-      - name: Packaging Smoke Test
+      - name: Packaging Smoke Test (Unix)
+        if: matrix.windows-msys != true
         run: bash tests/ci/packaging_smoke.sh
+
+      - name: Packaging Smoke Test (Windows MSYS2)
+        if: matrix.windows-msys == true
+        shell: msys2 {0}
+        run: |
+          CC_BIN=gcc CXX_BIN=g++ bash tests/ci/packaging_smoke.sh
+
+  benchmark-regression:
+    name: benchmark-regression
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Prepare Linux APT Sources
+        run: bash tests/ci/apt_prepare_ubuntu.sh
+      - name: Install GCC
+        run: |
+          sudo apt-get install -y gcc
+      - name: Run Benchmark Regression
+        run: |
+          CC_BIN=gcc bash tests/ci/run_bench_regression.sh
+
+  packaging-gate:
+    name: packaging-gate
+    runs-on: ubuntu-latest
+    needs: [packaging-smoke]
+    if: always()
+    steps:
+      - name: Evaluate Packaging Gate
+        env:
+          PACKAGING_RESULT: ${{ needs.packaging-smoke.result }}
+        run: |
+          [[ "$PACKAGING_RESULT" == "success" ]]
+
+  ci-gate:
+    name: ci-gate
+    runs-on: ubuntu-latest
+    needs:
+      - build-test
+      - musl-alpine
+      - big-endian-s390x
+      - packaging-gate
+      - benchmark-regression
+    if: always()
+    steps:
+      - name: Evaluate CI Gate
+        env:
+          BUILD_TEST_RESULT: ${{ needs.build-test.result }}
+          MUSL_RESULT: ${{ needs.musl-alpine.result }}
+          S390X_RESULT: ${{ needs.big-endian-s390x.result }}
+          PACKAGING_RESULT: ${{ needs.packaging-gate.result }}
+          BENCHMARK_RESULT: ${{ needs.benchmark-regression.result }}
+        run: |
+          [[ "$BUILD_TEST_RESULT" == "success" ]]
+          [[ "$MUSL_RESULT" == "success" ]]
+          [[ "$S390X_RESULT" == "success" ]]
+          [[ "$PACKAGING_RESULT" == "success" ]]
+          [[ "$BENCHMARK_RESULT" == "success" ]]
