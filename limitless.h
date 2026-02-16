@@ -167,6 +167,9 @@ LIMITLESS_API limitless_status limitless_number_neg(limitless_ctx* ctx, limitles
 LIMITLESS_API limitless_status limitless_number_abs(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
 LIMITLESS_API int limitless_number_cmp(limitless_ctx* ctx, const limitless_number* a, const limitless_number* b, limitless_status* st);
 
+LIMITLESS_API limitless_status limitless_number_min(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_max(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+
 LIMITLESS_API limitless_status limitless_number_gcd(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
 LIMITLESS_API limitless_status limitless_number_pow_u64(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_u64 exp);
 LIMITLESS_API limitless_status limitless_number_modexp_u64(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_u64 exp, const limitless_number* mod);
@@ -174,6 +177,8 @@ LIMITLESS_API limitless_status limitless_number_modexp_u64(limitless_ctx* ctx, l
 LIMITLESS_API int limitless_number_is_zero(const limitless_number* n);
 LIMITLESS_API int limitless_number_is_integer(const limitless_number* n);
 LIMITLESS_API int limitless_number_sign(const limitless_number* n);
+LIMITLESS_API int limitless_number_is_negative(const limitless_number* n);
+LIMITLESS_API int limitless_number_is_positive(const limitless_number* n);
 
 #ifdef __cplusplus
 }
@@ -2140,6 +2145,24 @@ LIMITLESS_API limitless_status limitless_number_abs(limitless_ctx* ctx, limitles
   return LIMITLESS_OK;
 }
 
+LIMITLESS_API limitless_status limitless_number_min(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  limitless_status st;
+  int c;
+  if (!ctx || !out || !a || !b) return LIMITLESS_EINVAL;
+  c = limitless_number_cmp(ctx, a, b, &st);
+  if (st != LIMITLESS_OK) return st;
+  return limitless_number_copy(ctx, out, c <= 0 ? a : b);
+}
+
+LIMITLESS_API limitless_status limitless_number_max(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  limitless_status st;
+  int c;
+  if (!ctx || !out || !a || !b) return LIMITLESS_EINVAL;
+  c = limitless_number_cmp(ctx, a, b, &st);
+  if (st != LIMITLESS_OK) return st;
+  return limitless_number_copy(ctx, out, c >= 0 ? a : b);
+}
+
 LIMITLESS_API int limitless_number_cmp(limitless_ctx* ctx, const limitless_number* a, const limitless_number* b, limitless_status* st) {
   if (st) *st = LIMITLESS_OK;
   if (!ctx || !a || !b) {
@@ -2344,6 +2367,14 @@ LIMITLESS_API int limitless_number_sign(const limitless_number* n) {
   if (n->kind == LIMITLESS_KIND_INT) return n->v.i.sign;
   if (n->kind == LIMITLESS_KIND_RAT) return n->v.r.num.sign;
   return 0;
+}
+
+LIMITLESS_API int limitless_number_is_negative(const limitless_number* n) {
+  return limitless_number_sign(n) < 0;
+}
+
+LIMITLESS_API int limitless_number_is_positive(const limitless_number* n) {
+  return limitless_number_sign(n) > 0;
 }
 
 #ifdef __cplusplus
