@@ -79,6 +79,9 @@ compile_c "$BUILD_DIR/test_limitless_c_generated" tests/test_limitless_generated
 compile_c "$BUILD_DIR/test_default_allocator_override" tests/test_default_allocator_override.c
 "$BUILD_DIR/test_default_allocator_override"
 
+compile_c "$BUILD_DIR/test_limitless_branch_coverage" tests/test_limitless_branch_coverage.c
+"$BUILD_DIR/test_limitless_branch_coverage"
+
 compile_c "$BUILD_DIR/test_multi" tests/multi_impl.c tests/multi_a.c tests/multi_b.c
 "$BUILD_DIR/test_multi"
 

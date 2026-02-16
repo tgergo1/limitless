@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc:*)",
+      "Bash(bash tests/ci/run_coverage.sh)",
+      "Bash(gcovr:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}
