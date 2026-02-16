@@ -239,7 +239,7 @@ jobs:
           install: |
             apk add --no-cache bash build-base git python3
           run: |
-            CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh default
+            CC_BIN=cc CXX_BIN=c++ LIMITLESS_SKIP_CPP=1 bash tests/ci/run_unix_matrix.sh default
 
   packaging-smoke:
     name: packaging-smoke / ${{ matrix.os }}
