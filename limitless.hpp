@@ -307,6 +307,23 @@ public:
     return out;
   }
 
+  limitless_number abs() const {
+    limitless_number out;
+    limitless_ctx* ctx = effective_ctx();
+    limitless_status st = out.rebind_owner(ctx);
+    if (st == LIMITLESS_OK) {
+      st = limitless_number_abs(ctx, &out.raw_, &raw_);
+    }
+    limitless_cpp__set_last_status(st);
+    return out;
+  }
+
+  bool is_zero() const { return limitless_number_is_zero(&raw_) != 0; }
+  bool is_integer() const { return limitless_number_is_integer(&raw_) != 0; }
+  bool is_negative() const { return limitless_number_is_negative(&raw_) != 0; }
+  bool is_positive() const { return limitless_number_is_positive(&raw_) != 0; }
+  int sign() const { return limitless_number_sign(&raw_); }
+
   const limitless_c_number* raw() const { return &raw_; }
   limitless_c_number* raw() { return &raw_; }
 
@@ -457,6 +474,32 @@ template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator>=(T lhs, const limitless_number& rhs) {
   return limitless_number(lhs) >= rhs; /* GCOVR_EXCL_BR_LINE */
+}
+
+inline limitless_number min(const limitless_number& a, const limitless_number& b) {
+  limitless_number out;
+  limitless_ctx* ctx = limitless_cpp__active_ctx();
+  limitless_status st = LIMITLESS_OK;
+  if (ctx) {
+    st = limitless_number_min(ctx, out.raw(), a.raw(), b.raw());
+  } else {
+    st = LIMITLESS_EINVAL; /* GCOVR_EXCL_LINE */
+  }
+  limitless_cpp__set_last_status(st);
+  return out;
+}
+
+inline limitless_number max(const limitless_number& a, const limitless_number& b) {
+  limitless_number out;
+  limitless_ctx* ctx = limitless_cpp__active_ctx();
+  limitless_status st = LIMITLESS_OK;
+  if (ctx) {
+    st = limitless_number_max(ctx, out.raw(), a.raw(), b.raw());
+  } else {
+    st = LIMITLESS_EINVAL; /* GCOVR_EXCL_LINE */
+  }
+  limitless_cpp__set_last_status(st);
+  return out;
 }
 
 } /* namespace limitless */
