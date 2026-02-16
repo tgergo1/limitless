@@ -50,9 +50,9 @@ case "$MODE" in
     DEF_EXTRA+=(-DLIMITLESS_EXTENDED_STRESS)
     ;;
   asan-ubsan)
-    CFLAGS_BASE+=(-fsanitize=address,undefined -fno-omit-frame-pointer)
-    CXXFLAGS_BASE+=(-fsanitize=address,undefined -fno-omit-frame-pointer)
-    LDFLAGS_EXTRA+=(-fsanitize=address,undefined)
+    CFLAGS_BASE+=(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+    CXXFLAGS_BASE+=(-fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer)
+    LDFLAGS_EXTRA+=(-fsanitize=address -fsanitize=undefined)
     DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-500}"
     ;;
   lsan)
@@ -76,19 +76,56 @@ esac
 compile_c() {
   local out="$1"
   shift
-  "$CC_BIN" "${CFLAGS_BASE[@]}" "${DEF_EXTRA[@]-}" "$@" "${LDFLAGS_EXTRA[@]-}" -o "$out"
+  local cmd=("$CC_BIN")
+  cmd+=("${CFLAGS_BASE[@]}")
+  if ((${#DEF_EXTRA[@]} > 0)); then
+    cmd+=("${DEF_EXTRA[@]}")
+  fi
+  cmd+=("$@")
+  if ((${#LDFLAGS_EXTRA[@]} > 0)); then
+    cmd+=("${LDFLAGS_EXTRA[@]}")
+  fi
+  cmd+=(-o "$out")
+  "${cmd[@]}"
 }
 
 compile_cpp() {
   local out="$1"
   shift
-  "$CXX_BIN" "${CXXFLAGS_BASE[@]}" "${CPP_EXTRA[@]-}" "${DEF_EXTRA[@]-}" "$@" "${LDFLAGS_EXTRA[@]-}" -o "$out"
+  local cmd=("$CXX_BIN")
+  cmd+=("${CXXFLAGS_BASE[@]}")
+  if ((${#CPP_EXTRA[@]} > 0)); then
+    cmd+=("${CPP_EXTRA[@]}")
+  fi
+  if ((${#DEF_EXTRA[@]} > 0)); then
+    cmd+=("${DEF_EXTRA[@]}")
+  fi
+  cmd+=("$@")
+  if ((${#LDFLAGS_EXTRA[@]} > 0)); then
+    cmd+=("${LDFLAGS_EXTRA[@]}")
+  fi
+  cmd+=(-o "$out")
+  "${cmd[@]}"
 }
 
 compile_cpp_allow_deprecated() {
   local out="$1"
   shift
-  "$CXX_BIN" "${CXXFLAGS_BASE[@]}" "${CPP_EXTRA[@]-}" "${DEF_EXTRA[@]-}" -Wno-error=deprecated-declarations "$@" "${LDFLAGS_EXTRA[@]-}" -o "$out"
+  local cmd=("$CXX_BIN")
+  cmd+=("${CXXFLAGS_BASE[@]}")
+  if ((${#CPP_EXTRA[@]} > 0)); then
+    cmd+=("${CPP_EXTRA[@]}")
+  fi
+  if ((${#DEF_EXTRA[@]} > 0)); then
+    cmd+=("${DEF_EXTRA[@]}")
+  fi
+  cmd+=(-Wno-error=deprecated-declarations)
+  cmd+=("$@")
+  if ((${#LDFLAGS_EXTRA[@]} > 0)); then
+    cmd+=("${LDFLAGS_EXTRA[@]}")
+  fi
+  cmd+=(-o "$out")
+  "${cmd[@]}"
 }
 
 if [[ "$MODE" == "extended-stress" ]]; then

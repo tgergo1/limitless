@@ -44,7 +44,7 @@ static void check_invariants(limitless_ctx* ctx, const limitless_number* n) {
     char num_s[512];
     char den_s[512];
     limitless_size num_len = (limitless_size)(slash - text);
-    limitless_size den_len = (limitless_size)strlen(slash + 1);
+    limitless_size den_len = (limitless_size)(strlen(slash + 1));
     assert(num_len < (limitless_size)sizeof(num_s));
     assert(den_len < (limitless_size)sizeof(den_s));
     memcpy(num_s, text, (size_t)num_len);

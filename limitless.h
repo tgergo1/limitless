@@ -372,8 +372,8 @@ static limitless_status limitless__bigint_reserve(limitless_ctx* ctx, limitless_
     }
     new_cap *= 2u;
   }
-  old_bytes = a->cap * (limitless_size)sizeof(limitless_limb);
-  new_bytes = new_cap * (limitless_size)sizeof(limitless_limb);
+  old_bytes = a->cap * (limitless_size)(sizeof(limitless_limb));
+  new_bytes = new_cap * (limitless_size)(sizeof(limitless_limb));
   if (a->limbs) {
     mem = limitless__realloc_bytes(ctx, a->limbs, old_bytes, new_bytes);
   } else {
@@ -1403,7 +1403,11 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
   if (st != LIMITLESS_OK) goto cleanup;
 
   bits = limitless__bigint_bit_length(&t);
-  cap = (bits == 0) ? (limitless_size)1 : (bits + 1);
+  if (bits == 0) {
+    cap = (limitless_size)1;
+  } else {
+    cap = bits + 1;
+  }
 
   rev = (char*)limitless__alloc_bytes(ctx, cap);
   if (!rev) {

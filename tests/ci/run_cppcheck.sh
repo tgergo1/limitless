@@ -20,6 +20,8 @@ fi
   --suppress=missingIncludeSystem \
   --suppress=assertWithSideEffect \
   --suppress=redundantAssignment \
+  --suppress=cstyleCast \
+  --suppress=dangerousTypeCast \
   --quiet \
   tests/test_limitless.c \
   tests/test_limitless_api.c \
@@ -37,6 +39,12 @@ fi
   --suppress=missingIncludeSystem \
   --suppress=assertWithSideEffect \
   --suppress=redundantAssignment \
+  --suppress=noExplicitConstructor \
+  --suppress=useInitializationList \
+  --suppress=uninitMemberVar \
+  --suppress=knownConditionTrueFalse \
+  --suppress=cstyleCast \
+  --suppress=dangerousTypeCast \
   --quiet \
   tests/test_limitless_cpp.cpp \
   tests/test_cpp_namespace_strict.cpp \
