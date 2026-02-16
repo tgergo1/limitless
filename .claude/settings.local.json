@@ -4,7 +4,8 @@
       "Bash(wc:*)",
       "Bash(bash tests/ci/run_coverage.sh)",
       "Bash(gcovr:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=100 bash:*)"
     ]
   }
 }

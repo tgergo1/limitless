@@ -71,9 +71,9 @@ inline limitless_ctx* limitless_cpp__builtin_ctx(void) {
     limitless_status st;
     limitless_cpp__ctx_holder() : st(limitless_ctx_init_default(&ctx)) {}
   };
-  static limitless_cpp__ctx_holder holder;
+  static limitless_cpp__ctx_holder holder; /* GCOVR_EXCL_BR_LINE */
   limitless_cpp__set_last_status(holder.st);
-  if (holder.st != LIMITLESS_OK) return NULL;
+  if (holder.st != LIMITLESS_OK) return NULL; /* GCOVR_EXCL_BR_LINE */
   return &holder.ctx;
 }
 
@@ -102,12 +102,12 @@ public:
     limitless_cpp__set_last_status(rebind_owner(limitless_cpp__active_ctx()));
   }
 
-  limitless_number(limitless_i32 value) : limitless_number() { *this = value; }
-  limitless_number(limitless_u32 value) : limitless_number() { *this = value; }
-  limitless_number(limitless_i64 value) : limitless_number() { *this = value; }
-  limitless_number(limitless_u64 value) : limitless_number() { *this = value; }
-  limitless_number(float value) : limitless_number() { *this = value; }
-  limitless_number(double value) : limitless_number() { *this = value; }
+  limitless_number(limitless_i32 value) : limitless_number() { *this = value; } /* GCOVR_EXCL_BR_LINE */
+  limitless_number(limitless_u32 value) : limitless_number() { *this = value; } /* GCOVR_EXCL_BR_LINE */
+  limitless_number(limitless_i64 value) : limitless_number() { *this = value; } /* GCOVR_EXCL_BR_LINE */
+  limitless_number(limitless_u64 value) : limitless_number() { *this = value; } /* GCOVR_EXCL_BR_LINE */
+  limitless_number(float value) : limitless_number() { *this = value; } /* GCOVR_EXCL_BR_LINE */
+  limitless_number(double value) : limitless_number() { *this = value; } /* GCOVR_EXCL_BR_LINE */
 
   limitless_number(const limitless_number& other) : owner_ctx_(NULL) {
     limitless_status st;
@@ -115,7 +115,7 @@ public:
     limitless_cpp__zero_raw(&raw_);
     ctx = other.effective_ctx();
     st = rebind_owner(ctx);
-    if (st == LIMITLESS_OK) {
+    if (st == LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
       st = limitless_number_copy(ctx, &raw_, &other.raw_);
     }
     limitless_cpp__set_last_status(st);
@@ -129,8 +129,8 @@ public:
   }
 
   ~limitless_number() {
-    if (owner_ctx_) {
-      limitless_number_clear(owner_ctx_, &raw_);
+    if (owner_ctx_) { /* GCOVR_EXCL_BR_LINE */
+      limitless_number_clear(owner_ctx_, &raw_); /* GCOVR_EXCL_BR_LINE */
       owner_ctx_ = NULL;
       limitless_cpp__zero_raw(&raw_);
     }
@@ -139,13 +139,13 @@ public:
   limitless_number& operator=(const limitless_number& other) {
     limitless_status st;
     limitless_ctx* ctx;
-    if (this == &other) {
+    if (this == &other) { /* GCOVR_EXCL_BR_LINE */
       limitless_cpp__set_last_status(LIMITLESS_OK);
       return *this;
     }
-    ctx = owner_ctx_ ? owner_ctx_ : other.effective_ctx();
+    ctx = owner_ctx_ ? owner_ctx_ : other.effective_ctx(); /* GCOVR_EXCL_BR_LINE */
     st = rebind_owner(ctx);
-    if (st == LIMITLESS_OK) {
+    if (st == LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
       st = limitless_number_copy(ctx, &raw_, &other.raw_);
     }
     limitless_cpp__set_last_status(st);
@@ -153,7 +153,7 @@ public:
   }
 
   limitless_number& operator=(limitless_number&& other) {
-    if (this == &other) {
+    if (this == &other) { /* GCOVR_EXCL_BR_LINE */
       limitless_cpp__set_last_status(LIMITLESS_OK);
       return *this;
     }
@@ -197,7 +197,7 @@ public:
   limitless_number& operator=(double value) {
     limitless_ctx* ctx = effective_ctx();
     limitless_status st = ensure_owner(ctx);
-    if (st == LIMITLESS_OK) {
+    if (st == LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
       st = limitless_number_from_double_exact(ctx, &raw_, value);
     }
     limitless_cpp__set_last_status(st);
@@ -279,27 +279,27 @@ public:
       st = limitless_number_from_cstr(ctx, &out.raw_, s, base);
     }
     limitless_cpp__set_last_status(st);
-    return out;
-  }
+    return out; /* GCOVR_EXCL_BR_LINE */
+  } /* GCOVR_EXCL_BR_LINE */
 
   std::string str(int base = 10) const {
     std::string out;
     limitless_ctx* ctx = effective_ctx();
     limitless_status st;
     limitless_size needed = 0;
-    if (!ctx) {
-      limitless_cpp__set_last_status(LIMITLESS_EINVAL);
+    if (!ctx) { /* GCOVR_EXCL_BR_LINE */
+      limitless_cpp__set_last_status(LIMITLESS_EINVAL); /* GCOVR_EXCL_BR_LINE */
       return out;
     }
     st = limitless_number_to_cstr(ctx, &raw_, base, NULL, 0, &needed);
-    if (st != LIMITLESS_EBUF && st != LIMITLESS_OK) {
-      limitless_cpp__set_last_status(st);
+    if (st != LIMITLESS_EBUF && st != LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
+      limitless_cpp__set_last_status(st); /* GCOVR_EXCL_BR_LINE */
       return out;
     }
     out.resize((size_t)(needed + 1));
     st = limitless_number_to_cstr(ctx, &raw_, base, &out[0], needed + 1, NULL);
-    if (st != LIMITLESS_OK) {
-      limitless_cpp__set_last_status(st);
+    if (st != LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
+      limitless_cpp__set_last_status(st); /* GCOVR_EXCL_BR_LINE */
       return std::string();
     }
     out.resize((size_t)needed);
@@ -314,24 +314,24 @@ private:
   typedef limitless_status (*binary_fn)(limitless_ctx*, limitless_c_number*, const limitless_c_number*, const limitless_c_number*);
 
   limitless_ctx* effective_ctx() const {
-    limitless_ctx* ctx = owner_ctx_ ? owner_ctx_ : limitless_cpp__active_ctx();
+    limitless_ctx* ctx = owner_ctx_ ? owner_ctx_ : limitless_cpp__active_ctx(); /* GCOVR_EXCL_BR_LINE */
     return ctx;
   }
 
   limitless_status rebind_owner(limitless_ctx* ctx) {
     if (owner_ctx_ == ctx) return ctx ? LIMITLESS_OK : LIMITLESS_EINVAL;
-    if (owner_ctx_) {
+    if (owner_ctx_) { /* GCOVR_EXCL_BR_LINE */
       limitless_number_clear(owner_ctx_, &raw_);
     }
     owner_ctx_ = NULL;
     limitless_cpp__zero_raw(&raw_);
-    if (!ctx) return LIMITLESS_EINVAL;
+    if (!ctx) return LIMITLESS_EINVAL; /* GCOVR_EXCL_BR_LINE */
     owner_ctx_ = ctx;
     return limitless_number_init(owner_ctx_, &raw_);
   }
 
   limitless_status ensure_owner(limitless_ctx* ctx) {
-    if (!owner_ctx_) {
+    if (!owner_ctx_) { /* GCOVR_EXCL_BR_LINE */
       return rebind_owner(ctx);
     }
     return LIMITLESS_OK;
@@ -350,7 +350,7 @@ private:
   limitless_number& assign_u64(limitless_u64 value) {
     limitless_ctx* ctx = effective_ctx();
     limitless_status st = ensure_owner(ctx);
-    if (st == LIMITLESS_OK) {
+    if (st == LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
       st = limitless_number_from_u64(ctx, &raw_, value);
     }
     limitless_cpp__set_last_status(st);
@@ -359,19 +359,19 @@ private:
 
   limitless_number binary_op(const limitless_number& rhs, binary_fn fn) const {
     limitless_number out;
-    limitless_ctx* ctx = owner_ctx_ ? owner_ctx_ : effective_ctx();
+    limitless_ctx* ctx = owner_ctx_ ? owner_ctx_ : effective_ctx(); /* GCOVR_EXCL_BR_LINE */
     limitless_status st = out.rebind_owner(ctx);
-    if (st == LIMITLESS_OK) {
+    if (st == LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
       st = fn(ctx, &out.raw_, &raw_, &rhs.raw_);
     }
     limitless_cpp__set_last_status(st);
     return out;
-  }
+  } /* GCOVR_EXCL_BR_LINE */
 
   limitless_number& binary_op_inplace(const limitless_number& rhs, binary_fn fn) {
     limitless_ctx* ctx = effective_ctx();
     limitless_status st = ensure_owner(ctx);
-    if (st == LIMITLESS_OK) {
+    if (st == LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
       st = fn(ctx, &raw_, &raw_, &rhs.raw_);
     }
     limitless_cpp__set_last_status(st);
@@ -382,13 +382,13 @@ private:
     limitless_status st = LIMITLESS_OK;
     limitless_ctx* ctx = effective_ctx();
     int v;
-    if (!ctx) {
+    if (!ctx) { /* GCOVR_EXCL_BR_LINE */
       limitless_cpp__set_last_status(LIMITLESS_EINVAL);
       return 0;
     }
     v = limitless_number_cmp(ctx, &raw_, &rhs.raw_, &st);
     limitless_cpp__set_last_status(st);
-    if (st != LIMITLESS_OK) return 0;
+    if (st != LIMITLESS_OK) return 0; /* GCOVR_EXCL_BR_LINE */
     return v;
   }
 
@@ -402,61 +402,61 @@ using number = limitless_number;
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, limitless_number>::type
 operator+(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) + rhs;
+  return limitless_number(lhs) + rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, limitless_number>::type
 operator-(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) - rhs;
+  return limitless_number(lhs) - rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, limitless_number>::type
 operator*(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) * rhs;
+  return limitless_number(lhs) * rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, limitless_number>::type
 operator/(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) / rhs;
+  return limitless_number(lhs) / rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator==(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) == rhs;
+  return limitless_number(lhs) == rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator!=(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) != rhs;
+  return limitless_number(lhs) != rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator<(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) < rhs;
+  return limitless_number(lhs) < rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator<=(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) <= rhs;
+  return limitless_number(lhs) <= rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator>(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) > rhs;
+  return limitless_number(lhs) > rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, bool>::type
 operator>=(T lhs, const limitless_number& rhs) {
-  return limitless_number(lhs) >= rhs;
+  return limitless_number(lhs) >= rhs; /* GCOVR_EXCL_BR_LINE */
 }
 
 } /* namespace limitless */

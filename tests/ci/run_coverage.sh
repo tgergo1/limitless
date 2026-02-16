@@ -97,6 +97,9 @@ compile_cpp "$BUILD_DIR/test_limitless_cpp_generated" tests/test_limitless_cpp_g
 compile_cpp "$BUILD_DIR/test_cpp_namespace_strict" tests/test_cpp_namespace_strict.cpp
 "$BUILD_DIR/test_cpp_namespace_strict"
 
+compile_cpp "$BUILD_DIR/test_limitless_cpp_branch_coverage" tests/test_limitless_cpp_branch_coverage.cpp
+"$BUILD_DIR/test_limitless_cpp_branch_coverage"
+
 compile_cpp_allow_deprecated "$BUILD_DIR/test_cpp_legacy_bridge" tests/test_cpp_legacy_bridge.cpp
 "$BUILD_DIR/test_cpp_legacy_bridge"
 
@@ -119,14 +122,14 @@ bash tests/ci/run_differential.sh "$BUILD_DIR/limitless_cli" "$DIFF_ITERS"
 
 gcovr \
   --root "$ROOT_DIR" \
-  --filter '(^|.*/)limitless\.h$' \
+  --filter '(^|.*/)limitless\.hp*$' \
   --gcov-ignore-parse-errors "$GCOVR_PARSE_POLICY" \
   --xml-pretty \
   --output "$BUILD_DIR/coverage.xml"
 
 gcovr \
   --root "$ROOT_DIR" \
-  --filter '(^|.*/)limitless\.h$' \
+  --filter '(^|.*/)limitless\.hp*$' \
   --gcov-ignore-parse-errors "$GCOVR_PARSE_POLICY" \
   --txt \
   --output "$BUILD_DIR/coverage.txt"
