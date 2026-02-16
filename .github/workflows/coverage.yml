@@ -67,6 +67,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: build/coverage/coverage.xml
+          disable_search: true
 
   coverage-gate:
     name: coverage-gate
