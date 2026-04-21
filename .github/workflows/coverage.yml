@@ -62,7 +62,7 @@ jobs:
             build/coverage/coverage.txt
 
       - name: Remove raw gcov data before Codecov upload
-        run: find build/coverage -name '*.gcda' -o -name '*.gcno' | xargs rm -f
+        run: find build/coverage \( -name '*.gcda' -o -name '*.gcno' \) -exec rm -f {} +
 
       - name: Upload coverage reports to Codecov
         if: success()
