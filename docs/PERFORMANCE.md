@@ -47,6 +47,8 @@ Representative local runs on the task environment:
 | `bench_parse_format` | 1418 µs | 578 µs | ~2.5x |
 | `bench_pow_modexp` | 493 µs | 240 µs | ~2.1x |
 
+`bench_bigint_mul` was not a target of this change. The representative run above was slightly noisier/slower, while the multiplication implementation itself was left unchanged and the benchmark gate still passes comfortably.
+
 Scaling probe highlights for 2048-digit decimal inputs:
 
 | operation | before | after | improvement |

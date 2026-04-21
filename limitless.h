@@ -1254,6 +1254,8 @@ static limitless_status limitless__bigint_gcd(limitless_ctx* ctx, limitless_bigi
   limitless_status st;
   limitless_u32 us;
   limitless_u32 vs;
+  int u_fits_u32;
+  int v_fits_u32;
   limitless__bigint_init_raw(&u);
   limitless__bigint_init_raw(&v);
   st = limitless__bigint_abs_copy(ctx, &u, a); if (st != LIMITLESS_OK) goto cleanup;
@@ -1270,13 +1272,16 @@ static limitless_status limitless__bigint_gcd(limitless_ctx* ctx, limitless_bigi
     goto cleanup;
   }
 
-  if (limitless__bigint_abs_to_u32(&u, &us)) {
+  u_fits_u32 = limitless__bigint_abs_to_u32(&u, &us);
+  v_fits_u32 = limitless__bigint_abs_to_u32(&v, &vs);
+
+  if (u_fits_u32) {
     us = limitless__u32_gcd(us, limitless__bigint_mod_small(&v, us));
     st = limitless__bigint_set_u64(ctx, out, (limitless_u64)us);
     if (st == LIMITLESS_OK && out->used > 0) out->sign = 1;
     goto cleanup;
   }
-  if (limitless__bigint_abs_to_u32(&v, &vs)) {
+  if (v_fits_u32) {
     vs = limitless__u32_gcd(vs, limitless__bigint_mod_small(&u, vs));
     st = limitless__bigint_set_u64(ctx, out, (limitless_u64)vs);
     if (st == LIMITLESS_OK && out->used > 0) out->sign = 1;
@@ -1358,7 +1363,6 @@ static limitless_status limitless__rational_set_int(limitless_ctx* ctx, limitles
 
 static limitless_status limitless__rational_normalize(limitless_ctx* ctx, limitless_rational* r) {
   limitless_status st;
-  limitless_bigint g, q;
   if (r->den.used == 0) return LIMITLESS_EDIVZERO;
   if (r->num.used == 0) {
     st = limitless__bigint_set_u64(ctx, &r->den, 1);
@@ -1373,29 +1377,32 @@ static limitless_status limitless__rational_normalize(limitless_ctx* ctx, limitl
   }
   if (limitless__bigint_is_one(&r->den)) return LIMITLESS_OK;
 
-  limitless__bigint_init_raw(&g);
-  limitless__bigint_init_raw(&q);
+  {
+    limitless_bigint g, q;
+    limitless__bigint_init_raw(&g);
+    limitless__bigint_init_raw(&q);
 
-  st = limitless__bigint_gcd(ctx, &g, &r->num, &r->den);
-  if (st != LIMITLESS_OK) goto cleanup;
-  if (g.used != 0 && !limitless__bigint_is_one(&g)) {
-    st = limitless__bigint_div_exact(ctx, &q, &r->num, &g);
+    st = limitless__bigint_gcd(ctx, &g, &r->num, &r->den);
     if (st != LIMITLESS_OK) goto cleanup;
-    limitless__bigint_swap(&r->num, &q);
-    q.used = 0;
-    q.sign = 0;
+    if (g.used != 0 && !limitless__bigint_is_one(&g)) {
+      st = limitless__bigint_div_exact(ctx, &q, &r->num, &g);
+      if (st != LIMITLESS_OK) goto cleanup;
+      limitless__bigint_swap(&r->num, &q);
+      q.used = 0;
+      q.sign = 0;
 
-    st = limitless__bigint_div_exact(ctx, &q, &r->den, &g);
-    if (st != LIMITLESS_OK) goto cleanup;
-    limitless__bigint_swap(&r->den, &q);
-    q.used = 0;
-    q.sign = 0;
+      st = limitless__bigint_div_exact(ctx, &q, &r->den, &g);
+      if (st != LIMITLESS_OK) goto cleanup;
+      limitless__bigint_swap(&r->den, &q);
+      q.used = 0;
+      q.sign = 0;
+    }
+
+  cleanup:
+    limitless__bigint_clear_raw(ctx, &g);
+    limitless__bigint_clear_raw(ctx, &q);
+    return st;
   }
-
-cleanup:
-  limitless__bigint_clear_raw(ctx, &g);
-  limitless__bigint_clear_raw(ctx, &q);
-  return st;
 }
 
 static int limitless__rational_den_is_one(const limitless_rational* r) {
@@ -1564,9 +1571,10 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
       limitless_size written = 0;
       if (n + min_digits > cap) {
         limitless_size new_cap = cap;
+        const limitless_size max_safe_doubling_capacity = (~(limitless_size)0) / 2u;
         char* grown;
         while (new_cap < n + min_digits) {
-          if (new_cap > ((~(limitless_size)0) / 2u)) {
+          if (new_cap > max_safe_doubling_capacity) {
             new_cap = n + min_digits;
             break;
           }
