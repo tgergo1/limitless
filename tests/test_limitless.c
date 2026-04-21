@@ -13,6 +13,12 @@ typedef struct fail_alloc_state {
   int calls;
 } fail_alloc_state;
 
+typedef struct count_alloc_state {
+  limitless_size allocs;
+  limitless_size reallocs;
+  limitless_size frees;
+} count_alloc_state;
+
 static void* fail_alloc(void* user, limitless_size size) {
   fail_alloc_state* st = (fail_alloc_state*)user;
   if (st->calls++ >= st->fail_after) return NULL;
@@ -29,6 +35,26 @@ static void* fail_realloc(void* user, void* ptr, limitless_size old_size, limitl
 static void fail_free(void* user, void* ptr, limitless_size size) {
   (void)user;
   (void)size;
+  free(ptr);
+}
+
+static void* count_alloc(void* user, limitless_size size) {
+  count_alloc_state* st = (count_alloc_state*)user;
+  ++st->allocs;
+  return malloc((size_t)size);
+}
+
+static void* count_realloc(void* user, void* ptr, limitless_size old_size, limitless_size new_size) {
+  count_alloc_state* st = (count_alloc_state*)user;
+  (void)old_size;
+  ++st->reallocs;
+  return realloc(ptr, (size_t)new_size);
+}
+
+static void count_free(void* user, void* ptr, limitless_size size) {
+  count_alloc_state* st = (count_alloc_state*)user;
+  (void)size;
+  ++st->frees;
   free(ptr);
 }
 
@@ -183,6 +209,90 @@ static void test_parse_format_bases(void) {
   limitless_number_clear(&ctx, &n);
 }
 
+static void test_large_base36_roundtrip(void) {
+  limitless_ctx ctx = make_ctx();
+  limitless_number n;
+  char src[257];
+  char out[257];
+  int i;
+  assert(limitless_number_init(&ctx, &n) == LIMITLESS_OK);
+
+  src[0] = 'z';
+  for (i = 1; i < 256; ++i) {
+    src[i] = (char)((i % 36) < 10 ? ('0' + (i % 10)) : ('a' + ((i % 36) - 10)));
+  }
+  src[256] = '\0';
+
+  assert(limitless_number_from_cstr(&ctx, &n, src, 36) == LIMITLESS_OK);
+  assert(limitless_number_to_cstr(&ctx, &n, 36, out, sizeof(out), NULL) == LIMITLESS_OK);
+  assert(strcmp(out, src) == 0);
+
+  limitless_number_clear(&ctx, &n);
+}
+
+static void test_large_parse_format_perf_contracts(void) {
+  count_alloc_state state;
+  limitless_alloc alloc;
+  limitless_ctx ctx;
+  limitless_number n;
+  char src[2049];
+  char out[2049];
+  int i;
+
+  memset(&state, 0, sizeof(state));
+  alloc.alloc = count_alloc;
+  alloc.realloc = count_realloc;
+  alloc.free = count_free;
+  alloc.user = &state;
+
+  assert(limitless_ctx_init(&ctx, &alloc) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &n) == LIMITLESS_OK);
+
+  for (i = 0; i < 2048; ++i) {
+    src[i] = (char)('1' + (i % 9));
+  }
+  src[2048] = '\0';
+
+  assert(limitless_number_from_str(&ctx, &n, src) == LIMITLESS_OK);
+  assert(state.reallocs <= 1);
+
+  state.allocs = 0;
+  state.reallocs = 0;
+  state.frees = 0;
+  assert(limitless_number_to_str(&ctx, &n, out, sizeof(out), NULL) == LIMITLESS_OK);
+  assert(strcmp(out, src) == 0);
+  assert(state.reallocs == 0);
+
+  limitless_number_clear(&ctx, &n);
+}
+
+static void test_large_small_division_paths(void) {
+  limitless_ctx ctx = make_ctx();
+  limitless_number a, b, out, back;
+  assert(limitless_number_init(&ctx, &a) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &b) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &out) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &back) == LIMITLESS_OK);
+
+  assert(limitless_number_from_str(&ctx, &a, "123456789123456789123456789123456789") == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &b, 9) == LIMITLESS_OK);
+  assert(limitless_number_div(&ctx, &out, &a, &b) == LIMITLESS_OK);
+  assert(limitless_number_is_integer(&out));
+  assert(limitless_number_mul(&ctx, &back, &out, &b) == LIMITLESS_OK);
+  assert(limitless_number_cmp(&ctx, &back, &a, NULL) == 0);
+
+  assert(limitless_number_from_str(&ctx, &a, "99999999999999999999999999999999999999999999999999") == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &b, 97) == LIMITLESS_OK);
+  assert(limitless_number_div(&ctx, &out, &a, &b) == LIMITLESS_OK);
+  assert(limitless_number_mul(&ctx, &back, &out, &b) == LIMITLESS_OK);
+  assert(limitless_number_cmp(&ctx, &back, &a, NULL) == 0);
+
+  limitless_number_clear(&ctx, &a);
+  limitless_number_clear(&ctx, &b);
+  limitless_number_clear(&ctx, &out);
+  limitless_number_clear(&ctx, &back);
+}
+
 static void test_default_aliases(void) {
   limitless_ctx ctx;
   limitless_number n;
@@ -265,6 +375,9 @@ int main(void) {
   test_gcd_pow_modexp();
   test_float_exact();
   test_parse_format_bases();
+  test_large_base36_roundtrip();
+  test_large_parse_format_perf_contracts();
+  test_large_small_division_paths();
   test_default_aliases();
   test_unchanged_on_failure();
   test_integer_exports();

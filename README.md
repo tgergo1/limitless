@@ -27,6 +27,7 @@ Current line: `experimental`, version `0.1.0`.
 
 - `limitless.h`: C API + implementation (`#define LIMITLESS_IMPLEMENTATION` in one TU)
 - `limitless.hpp`: C++ wrapper (`limitless::number`) with operators and RAII on top of the C API
+- `docs/PERFORMANCE.md`: performance findings, measurement notes, and remaining hotspots
 - `tests/`: baseline tests, generated matrix tests, stress tests, CI wrappers
   - API completeness + alias/failure-atomic tests
   - parser fuzz + valid roundtrip stress
