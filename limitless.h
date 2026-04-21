@@ -1567,8 +1567,11 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
   } else {
     while (t.used != 0) {
       limitless_u32 rem = limitless__bigint_divmod_small_inplace(&t, chunk_base);
-      limitless_size min_digits = (t.used == 0) ? (limitless_size)1 : chunk_digits;
+      limitless_size min_digits = chunk_digits;
       limitless_size written = 0;
+      if (t.used == 0) {
+        min_digits = (limitless_size)1;
+      }
       if (n + min_digits > cap) {
         limitless_size new_cap = cap;
         const limitless_size max_safe_doubling_capacity = (~(limitless_size)0) / 2u;
