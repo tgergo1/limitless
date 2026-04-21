@@ -22,9 +22,10 @@ jobs:
       - name: Install Gitleaks
         run: |
           GITLEAKS_VERSION=8.24.3
+          TMP_DIR="$(mktemp -d)"
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
-            | tar -xz gitleaks
-          sudo install -m 0755 gitleaks /usr/local/bin/gitleaks
+            | tar -xz -C "$TMP_DIR" gitleaks
+          sudo install -m 0755 "$TMP_DIR/gitleaks" /usr/local/bin/gitleaks
       - name: Run Gitleaks
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
