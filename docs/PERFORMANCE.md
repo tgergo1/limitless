@@ -38,22 +38,22 @@ In addition, a local scaling probe was used during development to compare 32/128
 
 ## Local benchmark results
 
-`tests/ci/run_bench_regression.sh` on the task environment:
+Representative local runs on the task environment:
 
 | benchmark | before | after | improvement |
 | --- | ---: | ---: | ---: |
-| `bench_bigint_mul` | 11 µs | 11 µs | ~1.0x |
-| `bench_div` | 1003 µs | 83 µs | ~12.1x |
-| `bench_parse_format` | 1418 µs | 495 µs | ~2.9x |
-| `bench_pow_modexp` | 493 µs | 212 µs | ~2.3x |
+| `bench_bigint_mul` | 11 µs | 13 µs | ~0.8x |
+| `bench_div` | 1003 µs | 99 µs | ~10.1x |
+| `bench_parse_format` | 1418 µs | 578 µs | ~2.5x |
+| `bench_pow_modexp` | 493 µs | 240 µs | ~2.1x |
 
 Scaling probe highlights for 2048-digit decimal inputs:
 
 | operation | before | after | improvement |
 | --- | ---: | ---: | ---: |
-| parse | 16042 µs | 2209 µs | ~7.3x |
-| format | 89952 µs | 11497 µs | ~7.8x |
-| divide by `97` | 192152 µs | 434 µs | ~442x |
+| parse | 16042 µs | 2151 µs | ~7.5x |
+| format | 89952 µs | 11366 µs | ~7.9x |
+| divide by `97` | 192152 µs | 383 µs | ~502x |
 
 ## Regression coverage
 

@@ -1155,7 +1155,7 @@ static limitless_status limitless__bigint_divmod_abs(limitless_ctx* ctx, limitle
     goto cleanup;
   }
 
-   if (limitless__bigint_abs_to_u32(&den, &den_small)) {
+  if (limitless__bigint_abs_to_u32(&den, &den_small)) {
     st = limitless__bigint_divmod_small_abs(ctx, q, r, &rem, den_small);
     goto cleanup;
   }
@@ -1562,6 +1562,24 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
       limitless_u32 rem = limitless__bigint_divmod_small_inplace(&t, chunk_base);
       limitless_size min_digits = (t.used == 0) ? (limitless_size)1 : chunk_digits;
       limitless_size written = 0;
+      if (n + min_digits > cap) {
+        limitless_size new_cap = cap;
+        char* grown;
+        while (new_cap < n + min_digits) {
+          if (new_cap > ((~(limitless_size)0) / 2u)) {
+            new_cap = n + min_digits;
+            break;
+          }
+          new_cap *= 2u;
+        }
+        grown = (char*)limitless__realloc_bytes(ctx, rev, cap, new_cap);
+        if (!grown) {
+          st = LIMITLESS_EOOM;
+          goto cleanup;
+        }
+        rev = grown;
+        cap = new_cap;
+      }
       while (rem != 0u || written < min_digits) {
         rev[n++] = limitless__digit_chr((int)(rem % (limitless_u32)base));
         rem /= (limitless_u32)base;

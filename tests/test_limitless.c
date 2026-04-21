@@ -219,7 +219,7 @@ static void test_large_base36_roundtrip(void) {
 
   src[0] = 'z';
   for (i = 1; i < 256; ++i) {
-    src[i] = (char)((i % 36) < 10 ? ('0' + (i % 10)) : ('a' + ((i % 36) - 10)));
+    src[i] = (char)((i % 36) < 10 ? ('0' + (i % 36)) : ('a' + ((i % 36) - 10)));
   }
   src[256] = '\0';
 
