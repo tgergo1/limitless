@@ -7,6 +7,8 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-22
+
 ### Added
 - Release-grade packaging metadata for CMake, pkg-config, Conan, and vcpkg overlay usage.
 - Large multi-compiler CI matrix and tag-driven release automation with checksums, SPDX SBOM, and provenance attestation.
