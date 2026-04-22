@@ -59,6 +59,12 @@ jobs:
             gcc-version: "13"
           - os: ubuntu-latest
             family: gcc
+            mode: valgrind
+            cc: gcc-13
+            cxx: g++-13
+            gcc-version: "13"
+          - os: ubuntu-latest
+            family: gcc
             mode: m32
             cc: gcc-13
             cxx: g++-13

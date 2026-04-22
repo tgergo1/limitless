@@ -87,6 +87,11 @@ jobs:
         run: |
           sudo apt-get install -y gcc-multilib g++-multilib libc6-dev-i386
 
+      - name: Install Valgrind
+        if: runner.os == 'Linux' && inputs.mode == 'valgrind'
+        run: |
+          sudo apt-get install -y valgrind
+
       - name: Setup MSVC Environment
         if: runner.os == 'Windows' && (inputs.family == 'msvc' || inputs.family == 'clang-cl')
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
