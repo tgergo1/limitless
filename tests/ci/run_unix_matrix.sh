@@ -29,6 +29,7 @@ CXXFLAGS_BASE=(
 LDFLAGS_EXTRA=()
 CPP_EXTRA=()
 DEF_EXTRA=()
+RUNNER_CMD=()
 DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-5000}"
 SKIP_CPP="${LIMITLESS_SKIP_CPP:-0}"
 
@@ -67,6 +68,21 @@ case "$MODE" in
     CXXFLAGS_BASE+=(-fsanitize=thread -fno-omit-frame-pointer)
     LDFLAGS_EXTRA+=(-fsanitize=thread)
     DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-500}"
+    ;;
+  valgrind)
+    CFLAGS_BASE+=(-O0 -g)
+    CXXFLAGS_BASE+=(-O0 -g)
+    RUNNER_CMD=(
+      valgrind
+      --quiet
+      --tool=memcheck
+      --leak-check=full
+      --show-leak-kinds=all
+      --errors-for-leak-kinds=all
+      --track-origins=yes
+      --error-exitcode=99
+    )
+    DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-200}"
     ;;
   *)
     echo "unknown mode: $MODE" >&2
@@ -129,74 +145,82 @@ compile_cpp_allow_deprecated() {
   "${cmd[@]}"
 }
 
+run_binary() {
+  if ((${#RUNNER_CMD[@]} > 0)); then
+    "${RUNNER_CMD[@]}" "$@"
+    return
+  fi
+  "$@"
+}
+
 if [[ "$MODE" == "extended-stress" ]]; then
   compile_c "$BUILD_DIR/test_limitless_generated_stress" tests/test_limitless_generated.c
-  "$BUILD_DIR/test_limitless_generated_stress"
+  run_binary "$BUILD_DIR/test_limitless_generated_stress"
 
   if [[ "$SKIP_CPP" != "1" ]]; then
     compile_cpp "$BUILD_DIR/test_limitless_cpp_generated_stress" tests/test_limitless_cpp_generated.cpp
-    "$BUILD_DIR/test_limitless_cpp_generated_stress"
+    run_binary "$BUILD_DIR/test_limitless_cpp_generated_stress"
   fi
   exit 0
 fi
 
 compile_c "$BUILD_DIR/test_limitless_c_basic" tests/test_limitless.c
-"$BUILD_DIR/test_limitless_c_basic"
+run_binary "$BUILD_DIR/test_limitless_c_basic"
 
 compile_c "$BUILD_DIR/test_limitless_api" tests/test_limitless_api.c
-"$BUILD_DIR/test_limitless_api"
+run_binary "$BUILD_DIR/test_limitless_api"
 
 compile_c "$BUILD_DIR/test_limitless_parse_edges" tests/test_limitless_parse_edges.c
-"$BUILD_DIR/test_limitless_parse_edges"
+run_binary "$BUILD_DIR/test_limitless_parse_edges"
 
 compile_c "$BUILD_DIR/test_limitless_conversion_edges" tests/test_limitless_conversion_edges.c
-"$BUILD_DIR/test_limitless_conversion_edges"
+run_binary "$BUILD_DIR/test_limitless_conversion_edges"
 
 compile_c "$BUILD_DIR/test_limitless_invariants" tests/test_limitless_invariants.c
-"$BUILD_DIR/test_limitless_invariants"
+run_binary "$BUILD_DIR/test_limitless_invariants"
 
 compile_c "$BUILD_DIR/test_limitless_allocator_contract" tests/test_limitless_allocator_contract.c
-"$BUILD_DIR/test_limitless_allocator_contract"
+run_binary "$BUILD_DIR/test_limitless_allocator_contract"
 
 compile_c "$BUILD_DIR/test_limitless_parser_fuzz" tests/test_limitless_parser_fuzz.c
-"$BUILD_DIR/test_limitless_parser_fuzz"
+run_binary "$BUILD_DIR/test_limitless_parser_fuzz"
 
 compile_c "$BUILD_DIR/test_limitless_c_generated" tests/test_limitless_generated.c
-"$BUILD_DIR/test_limitless_c_generated"
+run_binary "$BUILD_DIR/test_limitless_c_generated"
 
 compile_c "$BUILD_DIR/test_default_allocator_override" tests/test_default_allocator_override.c
-"$BUILD_DIR/test_default_allocator_override"
+run_binary "$BUILD_DIR/test_default_allocator_override"
 
 compile_c "$BUILD_DIR/test_multi" tests/multi_impl.c tests/multi_a.c tests/multi_b.c
-"$BUILD_DIR/test_multi"
+run_binary "$BUILD_DIR/test_multi"
 
 if [[ "$SKIP_CPP" != "1" ]]; then
   compile_cpp "$BUILD_DIR/test_multi_cpp" tests/multi_cpp_impl.cpp tests/multi_cpp_a.cpp tests/multi_cpp_b.cpp
-  "$BUILD_DIR/test_multi_cpp"
+  run_binary "$BUILD_DIR/test_multi_cpp"
 
   compile_cpp "$BUILD_DIR/test_limitless_cpp_basic" tests/test_limitless_cpp.cpp
-  "$BUILD_DIR/test_limitless_cpp_basic"
+  run_binary "$BUILD_DIR/test_limitless_cpp_basic"
 
   compile_cpp "$BUILD_DIR/test_limitless_cpp_generated" tests/test_limitless_cpp_generated.cpp
-  "$BUILD_DIR/test_limitless_cpp_generated"
+  run_binary "$BUILD_DIR/test_limitless_cpp_generated"
 
   compile_cpp "$BUILD_DIR/test_cpp_namespace_strict" tests/test_cpp_namespace_strict.cpp
-  "$BUILD_DIR/test_cpp_namespace_strict"
+  run_binary "$BUILD_DIR/test_cpp_namespace_strict"
 
   compile_cpp_allow_deprecated "$BUILD_DIR/test_cpp_legacy_bridge" tests/test_cpp_legacy_bridge.cpp
-  "$BUILD_DIR/test_cpp_legacy_bridge"
+  run_binary "$BUILD_DIR/test_cpp_legacy_bridge"
 
   compile_cpp "$BUILD_DIR/test_limitless_threads" tests/test_limitless_threads.cpp
-  "$BUILD_DIR/test_limitless_threads"
+  run_binary "$BUILD_DIR/test_limitless_threads"
 
   compile_cpp "$BUILD_DIR/test_limitless_threads_c_api" tests/test_limitless_threads_c_api.cpp
-  "$BUILD_DIR/test_limitless_threads_c_api"
+  run_binary "$BUILD_DIR/test_limitless_threads_c_api"
 
   compile_cpp "$BUILD_DIR/test_limitless_cpp_cross_thread_status" tests/test_limitless_cpp_cross_thread_status.cpp
-  "$BUILD_DIR/test_limitless_cpp_cross_thread_status"
+  run_binary "$BUILD_DIR/test_limitless_cpp_cross_thread_status"
 
   compile_cpp "$BUILD_DIR/test_include_repo_root" -I"$ROOT_DIR" tests/test_include_repo_root.cpp
-  "$BUILD_DIR/test_include_repo_root"
+  run_binary "$BUILD_DIR/test_include_repo_root"
 
   bash tests/ci/run_negative_compile.sh
 else

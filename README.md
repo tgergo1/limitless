@@ -264,6 +264,7 @@ CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh m32
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh asan-ubsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh lsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh tsan
+CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh valgrind
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh extended-stress
 ```
 
@@ -275,6 +276,13 @@ CC_BIN=gcc CXX_BIN=g++ LIMITLESS_DIFF_ITERS=800 bash tests/ci/run_coverage.sh
 ```
 
 coverage report scope is the core C header implementation (`limitless.h`).
+
+dynamic runtime analysis on Linux:
+
+```sh
+sudo apt-get install -y valgrind
+CC_BIN=cc CXX_BIN=c++ LIMITLESS_DIFF_ITERS=200 bash tests/ci/run_unix_matrix.sh valgrind
+```
 
 additional quality checks:
 

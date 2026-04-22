@@ -22,6 +22,7 @@ CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh noexceptions
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh asan-ubsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh lsan
 CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh tsan
+CC_BIN=cc CXX_BIN=c++ bash tests/ci/run_unix_matrix.sh valgrind
 
 bash tests/ci/run_negative_compile.sh
 bash tests/ci/run_clang_analyze.sh
@@ -33,7 +34,7 @@ bash tests/ci/run_fuzz_smoke.sh
 bash tests/ci/run_bench_regression.sh
 ```
 
-`m32`, `lsan`, and `tsan` availability depends on host toolchain support (fully covered in GitHub CI).
+`m32`, `lsan`, `tsan`, and `valgrind` availability depends on host tooling support (fully covered in GitHub CI).
 
 ## Coverage check
 

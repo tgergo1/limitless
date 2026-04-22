@@ -146,6 +146,35 @@ static void test_rebind_owner_branches() {
   limitless::limitless_cpp_set_default_ctx(NULL);
 }
 
+static void test_self_copy_assign() {
+  limitless_ctx ctx;
+  assert(limitless_ctx_init_default(&ctx) == LIMITLESS_OK);
+  limitless::limitless_cpp_set_default_ctx(&ctx);
+
+  limitless::number n = 42;
+  n = n;
+  assert(limitless::limitless_cpp_last_status() == LIMITLESS_OK);
+  assert(n.str() == "42");
+
+  limitless::limitless_cpp_set_default_ctx(NULL);
+}
+
+static void test_reuse_moved_from_number() {
+  limitless_ctx ctx;
+  assert(limitless_ctx_init_default(&ctx) == LIMITLESS_OK);
+  limitless::limitless_cpp_set_default_ctx(&ctx);
+
+  limitless::number original = 7;
+  limitless::number moved = std::move(original);
+  (void)moved;
+
+  original += 5;
+  assert(limitless::limitless_cpp_last_status() == LIMITLESS_OK);
+  assert(original.str() == "5");
+
+  limitless::limitless_cpp_set_default_ctx(NULL);
+}
+
 static void test_oom_in_cpp_wrapper() {
   fail_alloc_state state;
   limitless_alloc alloc;
@@ -283,9 +312,11 @@ static void test_all_free_template_operators() {
 int main() {
   test_all_constructor_types();
   test_self_move_assign();
+  test_self_copy_assign();
   test_moved_from_destructor();
   test_double_assign_operator();
   test_rebind_owner_branches();
+  test_reuse_moved_from_number();
   test_oom_in_cpp_wrapper();
   test_all_free_template_operators();
   std::printf("cpp branch coverage tests ok\n");
