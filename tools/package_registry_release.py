@@ -12,6 +12,9 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+REPO_OWNER = "tgergo1"
+REPO_NAME = "limitless"
+CHUNK_SIZE = 1024 * 1024
 
 
 def fail(message: str) -> None:
@@ -40,7 +43,7 @@ def normalize_version(version: str) -> str:
 
 
 def source_url(version: str) -> str:
-    return f"https://github.com/tgergo1/limitless/archive/refs/tags/v{version}.tar.gz"
+    return f"https://github.com/{REPO_OWNER}/{REPO_NAME}/archive/refs/tags/v{version}.tar.gz"
 
 
 def hash_url(url: str) -> dict[str, str]:
@@ -48,7 +51,7 @@ def hash_url(url: str) -> dict[str, str]:
     sha512 = hashlib.sha512()
     with urllib.request.urlopen(url) as response:
         while True:
-            chunk = response.read(1024 * 1024)
+            chunk = response.read(CHUNK_SIZE)
             if not chunk:
                 break
             sha256.update(chunk)
