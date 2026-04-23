@@ -260,8 +260,13 @@ $VCPKG_ROOT/vcpkg install limitless --overlay-ports=$PWD/packaging/vcpkg/ports
 ```
 
 Repository-side packaging is ready for Conan and vcpkg. The remaining work is
-the external registry submission itself: publish/update the ConanCenter recipe
-and submit/update the vcpkg port after each tagged release.
+performed automatically by GitHub Actions on stable release tags: the release
+workflow opens or updates the ConanCenter and vcpkg pull requests for that
+version.
+
+This automation requires a one-time `PACKAGE_REGISTRY_TOKEN` repository secret
+for a GitHub account that can fork `conan-io/conan-center-index` and
+`microsoft/vcpkg` and open pull requests from those forks.
 
 ## Local build and test
 

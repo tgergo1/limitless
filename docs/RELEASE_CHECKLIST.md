@@ -32,8 +32,9 @@
 
 ## Package registry follow-up
 
-1. Submit or update the ConanCenter recipe for the new tag.
-2. Submit or update the vcpkg port for the new tag.
+1. Verify the `package-registry-prs` job opened or updated the ConanCenter pull request.
+2. Verify the `package-registry-prs` job opened or updated the vcpkg pull request.
+3. If automation is not configured yet, add the `PACKAGE_REGISTRY_TOKEN` repository secret for an account that can fork those upstream repositories.
 
 ## Rollback
 
