@@ -74,13 +74,13 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          AUTOMATION_LOGIN=""
-          AUTOMATION_LOGIN="$(gh api user --jq '.login')"
-          echo "PACKAGE_AUTOMATION_LOGIN=${AUTOMATION_LOGIN}" >> "$GITHUB_ENV"
+          AUTOMATION_USERNAME=""
+          AUTOMATION_USERNAME="$(gh api user --jq '.login')"
+          echo "PACKAGE_AUTOMATION_USERNAME=${AUTOMATION_USERNAME}" >> "$GITHUB_ENV"
 
           ensure_fork() {
             local upstream_repo="$1"
-            local fork_repo="${AUTOMATION_LOGIN}/${upstream_repo##*/}"
+            local fork_repo="${AUTOMATION_USERNAME}/${upstream_repo##*/}"
             if gh repo view "${fork_repo}" >/dev/null 2>&1; then
               return 0
             fi
@@ -94,7 +94,7 @@ jobs:
             base_branch=""
             base_branch="$(gh repo view "${upstream_repo}" --json defaultBranchRef --jq '.defaultBranchRef.name')"
             rm -rf "${worktree}"
-            git clone "https://x-access-token:${GH_TOKEN}@github.com/${AUTOMATION_LOGIN}/${upstream_repo##*/}.git" "${worktree}" >/dev/null
+            git clone "https://x-access-token:${GH_TOKEN}@github.com/${AUTOMATION_USERNAME}/${upstream_repo##*/}.git" "${worktree}" >/dev/null
             git -C "${worktree}" remote add upstream "https://github.com/${upstream_repo}.git"
             git -C "${worktree}" fetch upstream "${base_branch}" >/dev/null
             git -C "${worktree}" checkout -B "limitless-${LIMITLESS_VERSION}" "upstream/${base_branch}" >/dev/null
@@ -106,7 +106,7 @@ jobs:
             local title="$2"
             local body="$3"
             local base_branch="$4"
-            local head_ref="${PACKAGE_AUTOMATION_LOGIN}:limitless-${LIMITLESS_VERSION}"
+            local head_ref="${PACKAGE_AUTOMATION_USERNAME}:limitless-${LIMITLESS_VERSION}"
             local existing_pr
             existing_pr="$(gh pr list --repo "${upstream_repo}" --head "${head_ref}" --json number --jq '.[0].number // ""')"
             if [[ -n "${existing_pr}" ]]; then

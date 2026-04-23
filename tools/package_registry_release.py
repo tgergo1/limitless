@@ -73,6 +73,17 @@ def git_output(repo: pathlib.Path, *args: str) -> str:
     return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
 
 
+def port_version_value(entry: object) -> int:
+    if not isinstance(entry, dict):
+        return -1
+    value = entry.get("port-version", 0)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return -1
+
+
 def update_vcpkg_portfile(portfile_path: pathlib.Path, version: str, sha512: str) -> None:
     text = read_text(portfile_path)
     text = re.sub(
@@ -158,7 +169,7 @@ def cmd_sync_vcpkg(args: argparse.Namespace) -> None:
         if not (
             isinstance(entry, dict)
             and entry.get("version") == version
-            and int(entry.get("port-version", 0)) == 0
+            and port_version_value(entry) == 0
         )
     ]
     versions.insert(0, {"git-tree": git_tree, "version": version, "port-version": 0})
