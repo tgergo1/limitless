@@ -74,12 +74,13 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          AUTOMATION_LOGIN=""
           AUTOMATION_LOGIN="$(gh api user --jq '.login')"
           echo "PACKAGE_AUTOMATION_LOGIN=${AUTOMATION_LOGIN}" >> "$GITHUB_ENV"
 
           ensure_fork() {
             local upstream_repo="$1"
-            local fork_repo="${AUTOMATION_LOGIN}/$(basename "${upstream_repo}")"
+            local fork_repo="${AUTOMATION_LOGIN}/${upstream_repo##*/}"
             if gh repo view "${fork_repo}" >/dev/null 2>&1; then
               return 0
             fi
@@ -90,9 +91,10 @@ jobs:
             local upstream_repo="$1"
             local worktree="$2"
             local base_branch
+            base_branch=""
             base_branch="$(gh repo view "${upstream_repo}" --json defaultBranchRef --jq '.defaultBranchRef.name')"
             rm -rf "${worktree}"
-            git clone "https://x-access-token:${GH_TOKEN}@github.com/${AUTOMATION_LOGIN}/$(basename "${upstream_repo}").git" "${worktree}" >/dev/null
+            git clone "https://x-access-token:${GH_TOKEN}@github.com/${AUTOMATION_LOGIN}/${upstream_repo##*/}.git" "${worktree}" >/dev/null
             git -C "${worktree}" remote add upstream "https://github.com/${upstream_repo}.git"
             git -C "${worktree}" fetch upstream "${base_branch}" >/dev/null
             git -C "${worktree}" checkout -B "limitless-${LIMITLESS_VERSION}" "upstream/${base_branch}" >/dev/null
