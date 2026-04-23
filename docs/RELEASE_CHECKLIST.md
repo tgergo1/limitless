@@ -30,6 +30,11 @@
 3. Build and run C/C++ consumers from install archive.
 4. Verify provenance attestation was generated.
 
+## Package registry follow-up
+
+1. Submit or update the ConanCenter recipe for the new tag.
+2. Submit or update the vcpkg port for the new tag.
+
 ## Rollback
 
 - If critical regression is discovered, delete invalid release tag, open incident issue, and publish corrected tag after fixes.

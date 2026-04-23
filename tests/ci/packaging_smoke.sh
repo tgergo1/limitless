@@ -139,6 +139,12 @@ if [[ -n "${VCPKG_ROOT:-}" && -x "${VCPKG_ROOT}/vcpkg" ]]; then
     mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
   fi
 
+  VCPKG_OVERLAY_ROOT="$BUILD_ROOT/vcpkg-overlay"
+  rm -rf "$VCPKG_OVERLAY_ROOT"
+  mkdir -p "$VCPKG_OVERLAY_ROOT/limitless"
+  cp "$ROOT_DIR/packaging/vcpkg/ports/limitless/portfile.cmake" "$VCPKG_OVERLAY_ROOT/limitless/portfile.cmake"
+  cp "$ROOT_DIR/packaging/vcpkg/ports/limitless/vcpkg.json" "$VCPKG_OVERLAY_ROOT/limitless/vcpkg.json"
+
   case "$(uname -s)" in
     Linux)
       VCPKG_TRIPLET="${VCPKG_TRIPLET:-x64-linux}"
@@ -155,7 +161,7 @@ if [[ -n "${VCPKG_ROOT:-}" && -x "${VCPKG_ROOT}/vcpkg" ]]; then
       ;;
   esac
 
-  "${VCPKG_ROOT}/vcpkg" install limitless --overlay-ports="$ROOT_DIR/packaging/vcpkg/ports" --triplet="$VCPKG_TRIPLET"
+  "${VCPKG_ROOT}/vcpkg" install limitless --overlay-ports="$VCPKG_OVERLAY_ROOT" --triplet="$VCPKG_TRIPLET"
 
   mkdir -p "$BUILD_ROOT/consumer-vcpkg"
   cat > "$BUILD_ROOT/consumer-vcpkg/vcpkg.json" <<'EOF_VCPKG'
@@ -184,7 +190,7 @@ EOF_VCPKG_CMAKE
 
   cmake -S "$BUILD_ROOT/consumer-vcpkg" -B "$BUILD_ROOT/consumer-vcpkg/build" \
     -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-    -DVCPKG_OVERLAY_PORTS="$ROOT_DIR/packaging/vcpkg/ports" \
+    -DVCPKG_OVERLAY_PORTS="$VCPKG_OVERLAY_ROOT" \
     -DVCPKG_TARGET_TRIPLET="$VCPKG_TRIPLET"
   cmake --build "$BUILD_ROOT/consumer-vcpkg/build"
   "$BUILD_ROOT/consumer-vcpkg/build/consumer_c"

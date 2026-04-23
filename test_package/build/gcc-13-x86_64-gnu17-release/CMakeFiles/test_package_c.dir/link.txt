@@ -1,0 +1,1 @@
+/usr/bin/cc -m64 -O3 -DNDEBUG -m64 -Wl,--dependency-file=CMakeFiles/test_package_c.dir/link.d CMakeFiles/test_package_c.dir/main.c.o CMakeFiles/test_package_c.dir/limitless_impl.c.o -o test_package_c

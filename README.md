@@ -16,7 +16,7 @@
 [![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macOS%20%7C%20windows-4c1)](https://github.com/tgergo1/limitless/actions/workflows/ci.yml)
 [![CMake](https://img.shields.io/badge/CMake-find__package-064F8C)](#cmake)
 [![Conan](https://img.shields.io/badge/Conan-recipe%20included-6699CB)](#conan-2)
-[![vcpkg](https://img.shields.io/badge/vcpkg-overlay%20port-1f425f)](#vcpkg-overlay-port)
+[![vcpkg](https://img.shields.io/badge/vcpkg-port%20included-1f425f)](#vcpkg)
 [![Status](https://img.shields.io/badge/status-experimental-orange)](#)
 
 Single-header exact big numbers for c and c++. It stores exact integers and exact fractions (`a/b`) and grows until memory runs out.
@@ -33,7 +33,7 @@ Current line: `experimental`, version `0.2.0`.
   - parser fuzz + valid roundtrip stress
   - C++ thread behavior tests
   - differential checks against a python `fractions.Fraction` reference
-- packaging metadata for CMake, pkg-config, Conan, and vcpkg overlay port
+- packaging metadata for CMake, pkg-config, Conan, and a vcpkg port
 
 current version is tracked in `LIMITLESS_VERSION.txt` and exposed in `limitless.h`:
 
@@ -230,6 +230,8 @@ cc main.c $(pkg-config --cflags --libs limitless) -o app
 
 ### Conan 2
 
+Recommended publication target: ConanCenter.
+
 ```sh
 conan profile detect --force
 conan create . --version "$(cat LIMITLESS_VERSION.txt)"
@@ -246,11 +248,20 @@ CMakeDeps
 CMakeToolchain
 ```
 
-### vcpkg overlay port
+### vcpkg
+
+Recommended publication target: the main vcpkg registry.
+
+The port in this repo works both as a local overlay and as an upstream-ready
+source-fetching port.
 
 ```sh
 $VCPKG_ROOT/vcpkg install limitless --overlay-ports=$PWD/packaging/vcpkg/ports
 ```
+
+Repository-side packaging is ready for Conan and vcpkg. The remaining work is
+the external registry submission itself: publish/update the ConanCenter recipe
+and submit/update the vcpkg port after each tagged release.
 
 ## Local build and test
 

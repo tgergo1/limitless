@@ -23,5 +23,5 @@
 ## Build and packaging
 
 - Header-only distribution model.
-- CMake target, pkg-config metadata, Conan recipe, and vcpkg overlay port.
+- CMake target, pkg-config metadata, Conan recipe, and vcpkg port.
 - CI matrix covers major OS/compiler/mode combinations.
