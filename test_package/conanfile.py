@@ -9,6 +9,7 @@ from conan.tools.cmake import CMake, cmake_layout
 class LimitlessTestPackageConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
     generators = "CMakeDeps", "CMakeToolchain"
+    # Require an explicit create/test flow for the packaged reference.
     test_type = "explicit"
 
     def requirements(self):
