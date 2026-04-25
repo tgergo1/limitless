@@ -238,7 +238,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - name: Run Big Endian Emulation
-        uses: uraimo/run-on-arch-action@ac33288c3728ca72563c97b8b88dda5a65a84448
+        uses: uraimo/run-on-arch-action@aa8e672a03e10b403401927ea2ceda57e1b68ac3
         with:
           arch: s390x
           distro: alpine_latest
