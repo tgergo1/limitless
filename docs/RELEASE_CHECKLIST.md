@@ -34,7 +34,7 @@
 
 1. Verify the `package-registry-prs` job opened or updated the ConanCenter pull request.
 2. Verify the `package-registry-prs` job opened or updated the vcpkg pull request.
-3. If automation is not configured yet, add the `PACKAGE_REGISTRY_TOKEN` repository secret for an account that can fork those upstream repositories.
+3. Respond to any ConanCenter or vcpkg review feedback until the upstream pull requests merge.
 
 ## Rollback
 

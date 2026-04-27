@@ -123,7 +123,7 @@ jobs:
             --version "${LIMITLESS_VERSION}" \
             --source-url "${SOURCE_URL}" \
             --source-sha256 "${SOURCE_SHA256}"
-          if ! git -C "$RUNNER_TEMP/conan-center-index" diff --quiet; then
+          if [[ -n "$(git -C "$RUNNER_TEMP/conan-center-index" status --short --untracked-files=all -- recipes/limitless)" ]]; then
             git -C "$RUNNER_TEMP/conan-center-index" add recipes/limitless
             git -C "$RUNNER_TEMP/conan-center-index" commit -m "limitless: add version ${LIMITLESS_VERSION}"
             git -C "$RUNNER_TEMP/conan-center-index" push --force-with-lease origin "limitless-${LIMITLESS_VERSION}"
@@ -140,7 +140,14 @@ jobs:
             --target-repo "$RUNNER_TEMP/vcpkg" \
             --version "${LIMITLESS_VERSION}" \
             --source-sha512 "${SOURCE_SHA512}"
-          if ! git -C "$RUNNER_TEMP/vcpkg" diff --quiet; then
+          if [[ -n "$(git -C "$RUNNER_TEMP/vcpkg" status --short --untracked-files=all -- ports/limitless)" ]]; then
+            git -C "$RUNNER_TEMP/vcpkg" add ports/limitless
+            (
+              cd "$RUNNER_TEMP/vcpkg"
+              export VCPKG_FORCE_SYSTEM_BINARIES=1
+              ./bootstrap-vcpkg.sh -disableMetrics
+              ./vcpkg x-add-version limitless
+            )
             git -C "$RUNNER_TEMP/vcpkg" add ports/limitless versions/l-/limitless.json versions/baseline.json
             git -C "$RUNNER_TEMP/vcpkg" commit -m "[limitless] add version ${LIMITLESS_VERSION}"
             git -C "$RUNNER_TEMP/vcpkg" push --force-with-lease origin "limitless-${LIMITLESS_VERSION}"

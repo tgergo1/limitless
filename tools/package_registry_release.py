@@ -6,7 +6,6 @@ import json
 import pathlib
 import re
 import shutil
-import subprocess
 import sys
 import urllib.request
 
@@ -43,7 +42,10 @@ def normalize_version(version: str) -> str:
 
 
 def source_url(version: str) -> str:
-    return f"https://github.com/{REPO_OWNER}/{REPO_NAME}/archive/refs/tags/v{version}.tar.gz"
+    return (
+        f"https://github.com/{REPO_OWNER}/{REPO_NAME}/releases/download/"
+        f"v{version}/{REPO_NAME}-{version}.tar.gz"
+    )
 
 
 def hash_url(url: str) -> dict[str, str]:
@@ -67,21 +69,6 @@ def copy_tree(src: pathlib.Path, dst: pathlib.Path) -> None:
 
 def read_json(path: pathlib.Path) -> object:
     return json.loads(read_text(path))
-
-
-def git_output(repo: pathlib.Path, *args: str) -> str:
-    return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
-
-
-def port_version_value(entry: object) -> int:
-    if not isinstance(entry, dict):
-        return -1
-    value = entry.get("port-version", 0)
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str) and value.isdigit():
-        return int(value)
-    return -1
 
 
 def update_vcpkg_portfile(portfile_path: pathlib.Path, version: str, sha512: str) -> None:
@@ -152,39 +139,6 @@ def cmd_sync_vcpkg(args: argparse.Namespace) -> None:
         fail(f"unexpected vcpkg manifest structure: {vcpkg_manifest_path}")
     vcpkg_manifest["version-string"] = version
     write_json(vcpkg_manifest_path, vcpkg_manifest)
-
-    git_output(target_repo, "add", "ports/limitless")
-    git_tree = git_output(target_repo, "write-tree", "--prefix=ports/limitless")
-
-    versions_path = target_repo / "versions" / "l-" / "limitless.json"
-    if versions_path.exists():
-        versions_data = read_json(versions_path)
-    else:
-        versions_data = {"versions": []}
-    if not isinstance(versions_data, dict) or not isinstance(versions_data.get("versions"), list):
-        fail(f"unexpected versions file structure: {versions_path}")
-    versions = [
-        entry
-        for entry in versions_data["versions"]
-        if not (
-            isinstance(entry, dict)
-            and entry.get("version") == version
-            and port_version_value(entry) == 0
-        )
-    ]
-    versions.insert(0, {"git-tree": git_tree, "version": version, "port-version": 0})
-    versions_data["versions"] = versions
-    write_json(versions_path, versions_data)
-
-    baseline_path = target_repo / "versions" / "baseline.json"
-    baseline_data = read_json(baseline_path)
-    if not isinstance(baseline_data, dict):
-        fail(f"unexpected baseline structure: {baseline_path}")
-    default_registry = baseline_data.setdefault("default", {})
-    if not isinstance(default_registry, dict):
-        fail(f"unexpected default baseline structure: {baseline_path}")
-    default_registry["limitless"] = {"baseline": version, "port-version": 0}
-    write_json(baseline_path, baseline_data)
 
 
 def build_parser() -> argparse.ArgumentParser:

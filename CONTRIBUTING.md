@@ -68,10 +68,12 @@ $VCPKG_ROOT/vcpkg install limitless --overlay-ports=$PWD/packaging/vcpkg/ports
 The shipped vcpkg port is also structured so it can be submitted upstream and
 fetch tagged release sources outside the repository tree.
 
-Stable release tags also trigger GitHub Actions automation that opens or
-updates the upstream ConanCenter and vcpkg pull requests. Configure a
-`PACKAGE_REGISTRY_TOKEN` repository secret for a GitHub account that can fork
-those upstream repositories to enable fully automated submissions.
+Stable release tags also trigger GitHub Actions automation that hashes the
+published GitHub Release tarball, opens or updates the upstream ConanCenter
+pull request, and refreshes the upstream vcpkg version metadata with
+`vcpkg x-add-version`. Configure a `PACKAGE_REGISTRY_TOKEN` repository secret
+for a GitHub account that can fork those upstream repositories to enable fully
+automated submissions.
 
 ## Regenerating test vectors
 

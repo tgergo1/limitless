@@ -261,8 +261,9 @@ $VCPKG_ROOT/vcpkg install limitless --overlay-ports=$PWD/packaging/vcpkg/ports
 
 Repository-side packaging is ready for Conan and vcpkg. The remaining work is
 performed automatically by GitHub Actions on stable release tags: the release
-workflow opens or updates the ConanCenter and vcpkg pull requests for that
-version.
+workflow hashes the published GitHub Release tarball, opens or updates the
+ConanCenter pull request for that source archive, and refreshes the vcpkg port
+plus version metadata with `vcpkg x-add-version`.
 
 This automation requires a one-time `PACKAGE_REGISTRY_TOKEN` repository secret
 for a GitHub account that can fork `conan-io/conan-center-index` and
