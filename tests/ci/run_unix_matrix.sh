@@ -190,7 +190,7 @@ compile_c "$BUILD_DIR/test_limitless_c_generated" tests/test_limitless_generated
 run_binary "$BUILD_DIR/test_limitless_c_generated"
 
 if [[ "$SKIP_POST_GENERATED" == "1" ]]; then
-  echo "skipping post-generated checks for this run (LIMITLESS_SKIP_POST_GENERATED=1)"
+  echo "skipping post-generated checks for this run due to emulated-compiler limitations (LIMITLESS_SKIP_POST_GENERATED=1)"
   exit 0
 fi
 
