@@ -250,16 +250,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - name: Configure s390x emulation
+        run: |
+          sudo apt-get update -q -y
+          sudo apt-get install -q -y qemu-user-static
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes --credential yes
       - name: Run Big Endian Emulation
-        uses: uraimo/run-on-arch-action@ac33288c3728ca72563c97b8b88dda5a65a84448
-        with:
-          arch: s390x
-          distro: alpine_latest
-          githubToken: ${{ github.token }}
-          install: |
-            apk add --no-cache bash build-base git python3
-          run: |
-            CC_BIN=cc CXX_BIN=c++ LIMITLESS_SKIP_CPP=1 bash tests/ci/run_unix_matrix.sh default
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="alpine:3.21"
+          for attempt in 1 2 3; do
+            if docker pull --platform linux/s390x "$image"; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "failed to pull $image for linux/s390x after $attempt attempts" >&2
+              exit 1
+            fi
+            sleep "$((attempt * 5))"
+          done
+
+          docker run --rm --platform linux/s390x \
+            -e CI=1 \
+            -e GITHUB_ACTIONS=true \
+            -v "${PWD}:${PWD}" \
+            -w "${PWD}" \
+            "$image" \
+            /bin/sh -ec '
+              apk add --no-cache bash build-base git python3
+              CC_BIN=cc CXX_BIN=c++ LIMITLESS_SKIP_CPP=1 LIMITLESS_SKIP_POST_GENERATED=1 bash tests/ci/run_unix_matrix.sh default
+            '
 
   packaging-smoke:
     name: packaging-smoke / ${{ matrix.os }}
@@ -445,3 +466,11 @@ jobs:
             dist/limitless-*.zip
             dist/limitless-*.spdx.json
             dist/SHA256SUMS
+
+  package-registry-prs:
+    needs: assemble-release
+    if: ${{ !contains(github.ref_name, '-rc') && !contains(github.ref_name, '-beta') }}
+    uses: ./.github/workflows/package-registry.yml
+    secrets: inherit
+    with:
+      tag: ${{ github.ref_name }}

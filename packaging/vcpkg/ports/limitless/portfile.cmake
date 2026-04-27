@@ -1,8 +1,22 @@
 # SPDX-License-Identifier: GPL-3.0-only
-set(SOURCE_PATH "${CURRENT_PORT_DIR}/../../../..")
+set(_limitless_local_source "${CURRENT_PORT_DIR}/../../../..")
 
-if(NOT EXISTS "${SOURCE_PATH}/CMakeLists.txt")
-    message(FATAL_ERROR "limitless overlay source path not found: ${SOURCE_PATH}")
+if(EXISTS "${_limitless_local_source}/CMakeLists.txt")
+    set(SOURCE_PATH "${_limitless_local_source}")
+else()
+    # SHA512 for the v0.2.0 tagged source archive; update it when bumping the
+    # port to a new release.
+    set(_limitless_source_sha512
+        "0c48f94423a30ec078faa82ff8afd06b010d1653d6496a46a46dd80815f1d69f5dad3c3fa82d91e9933917d4e38006adae69e6ef861577537110706e21343cd7"
+    )
+
+    vcpkg_from_github(
+        OUT_SOURCE_PATH SOURCE_PATH
+        REPO tgergo1/limitless
+        REF "v${VERSION}"
+        SHA512 "${_limitless_source_sha512}"
+        HEAD_REF main
+    )
 endif()
 
 vcpkg_cmake_configure(

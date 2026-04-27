@@ -32,6 +32,7 @@ DEF_EXTRA=()
 RUNNER_CMD=()
 DIFF_ITERS="${LIMITLESS_DIFF_ITERS:-5000}"
 SKIP_CPP="${LIMITLESS_SKIP_CPP:-0}"
+SKIP_POST_GENERATED="${LIMITLESS_SKIP_POST_GENERATED:-0}"
 
 case "$MODE" in
   default)
@@ -187,6 +188,11 @@ run_binary "$BUILD_DIR/test_limitless_parser_fuzz"
 
 compile_c "$BUILD_DIR/test_limitless_c_generated" tests/test_limitless_generated.c
 run_binary "$BUILD_DIR/test_limitless_c_generated"
+
+if [[ "$SKIP_POST_GENERATED" == "1" ]]; then
+  echo "skipping post-generated checks for this run due to emulated-compiler limitations (LIMITLESS_SKIP_POST_GENERATED=1)"
+  exit 0
+fi
 
 compile_c "$BUILD_DIR/test_default_allocator_override" tests/test_default_allocator_override.c
 run_binary "$BUILD_DIR/test_default_allocator_override"

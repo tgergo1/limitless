@@ -1,0 +1,159 @@
+# SPDX-License-Identifier: GPL-3.0-only
+name: Package Registry PRs
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Stable release tag to publish (for example v0.2.0)
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Stable release tag to publish (for example v0.2.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  open-upstream-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Registry Automation Token
+        env:
+          PACKAGE_REGISTRY_TOKEN: ${{ secrets.PACKAGE_REGISTRY_TOKEN }}
+        run: |
+          [[ -n "${PACKAGE_REGISTRY_TOKEN}" ]] || {
+            echo "PACKAGE_REGISTRY_TOKEN secret is required for package-registry automation" >&2
+            exit 1
+          }
+
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        with:
+          python-version: "3.11"
+
+      - name: Prepare Release Metadata
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RUNNER_TEMP_DIR: ${{ runner.temp }}
+        run: |
+          python3 tools/check_version.py "${RELEASE_TAG}"
+          [[ "${RELEASE_TAG}" != *-* ]] || {
+            echo "package registry automation skips prerelease tags: ${RELEASE_TAG}" >&2
+            exit 1
+          }
+          VERSION="${RELEASE_TAG#v}"
+          echo "LIMITLESS_VERSION=${VERSION}" >> "$GITHUB_ENV"
+          python3 tools/package_registry_release.py hash --version "${VERSION}" > "$RUNNER_TEMP/package-release.json"
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import os
+          import json
+          import pathlib
+          meta = json.loads(pathlib.Path(os.environ["RUNNER_TEMP_DIR"], "package-release.json").read_text(encoding="utf-8"))
+          print(f'SOURCE_URL={meta["source_url"]}')
+          print(f'SOURCE_SHA256={meta["source_sha256"]}')
+          print(f'SOURCE_SHA512={meta["source_sha512"]}')
+          PY
+
+      - name: Open ConanCenter And vcpkg PRs
+        env:
+          GH_TOKEN: ${{ secrets.PACKAGE_REGISTRY_TOKEN }}
+          GH_PROMPT_DISABLED: "1"
+        run: |
+          set -euo pipefail
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          AUTOMATION_USERNAME=""
+          AUTOMATION_USERNAME="$(gh api user --jq '.login')"
+          echo "PACKAGE_AUTOMATION_USERNAME=${AUTOMATION_USERNAME}" >> "$GITHUB_ENV"
+
+          ensure_fork() {
+            local upstream_repo="$1"
+            local fork_repo="${AUTOMATION_USERNAME}/${upstream_repo##*/}"
+            if gh repo view "${fork_repo}" >/dev/null 2>&1; then
+              return 0
+            fi
+            gh repo fork "${upstream_repo}" --clone=false --remote=false >/dev/null
+          }
+
+          clone_and_prepare() {
+            local upstream_repo="$1"
+            local worktree="$2"
+            local base_branch
+            base_branch=""
+            base_branch="$(gh repo view "${upstream_repo}" --json defaultBranchRef --jq '.defaultBranchRef.name')"
+            rm -rf "${worktree}"
+            git clone "https://x-access-token:${GH_TOKEN}@github.com/${AUTOMATION_USERNAME}/${upstream_repo##*/}.git" "${worktree}" >/dev/null
+            git -C "${worktree}" remote add upstream "https://github.com/${upstream_repo}.git"
+            git -C "${worktree}" fetch upstream "${base_branch}" >/dev/null
+            git -C "${worktree}" checkout -B "limitless-${LIMITLESS_VERSION}" "upstream/${base_branch}" >/dev/null
+            echo "${base_branch}"
+          }
+
+          create_or_update_pr() {
+            local upstream_repo="$1"
+            local title="$2"
+            local body="$3"
+            local base_branch="$4"
+            local head_ref="${PACKAGE_AUTOMATION_USERNAME}:limitless-${LIMITLESS_VERSION}"
+            local existing_pr
+            existing_pr="$(gh pr list --repo "${upstream_repo}" --head "${head_ref}" --json number --jq '.[0].number // ""')"
+            if [[ -n "${existing_pr}" ]]; then
+              gh pr edit "${existing_pr}" --repo "${upstream_repo}" --title "${title}" --body "${body}"
+            else
+              gh pr create --repo "${upstream_repo}" --base "${base_branch}" --head "${head_ref}" --title "${title}" --body "${body}"
+            fi
+          }
+
+          ensure_fork "conan-io/conan-center-index"
+          CCI_BASE="$(clone_and_prepare "conan-io/conan-center-index" "$RUNNER_TEMP/conan-center-index")"
+          python3 tools/package_registry_release.py sync-conan-center \
+            --target-repo "$RUNNER_TEMP/conan-center-index" \
+            --version "${LIMITLESS_VERSION}" \
+            --source-url "${SOURCE_URL}" \
+            --source-sha256 "${SOURCE_SHA256}"
+          if [[ -n "$(git -C "$RUNNER_TEMP/conan-center-index" status --short --untracked-files=all -- recipes/limitless)" ]]; then
+            git -C "$RUNNER_TEMP/conan-center-index" add recipes/limitless
+            git -C "$RUNNER_TEMP/conan-center-index" commit -m "limitless: add version ${LIMITLESS_VERSION}"
+            git -C "$RUNNER_TEMP/conan-center-index" push --force-with-lease origin "limitless-${LIMITLESS_VERSION}"
+            create_or_update_pr \
+              "conan-io/conan-center-index" \
+              "limitless: add version ${LIMITLESS_VERSION}" \
+              $'Automated from the Limitless release workflow.\n\n- release tag: '"${RELEASE_TAG}"$'\n- source url: '"${SOURCE_URL}"$'\n- source sha256: '"${SOURCE_SHA256}" \
+              "${CCI_BASE}"
+          fi
+
+          ensure_fork "microsoft/vcpkg"
+          VCPKG_BASE="$(clone_and_prepare "microsoft/vcpkg" "$RUNNER_TEMP/vcpkg")"
+          python3 tools/package_registry_release.py sync-vcpkg \
+            --target-repo "$RUNNER_TEMP/vcpkg" \
+            --version "${LIMITLESS_VERSION}" \
+            --source-sha512 "${SOURCE_SHA512}"
+          if [[ -n "$(git -C "$RUNNER_TEMP/vcpkg" status --short --untracked-files=all -- ports/limitless)" ]]; then
+            git -C "$RUNNER_TEMP/vcpkg" add ports/limitless
+            (
+              cd "$RUNNER_TEMP/vcpkg"
+              export VCPKG_FORCE_SYSTEM_BINARIES=1
+              ./bootstrap-vcpkg.sh -disableMetrics
+              ./vcpkg x-add-version limitless
+            )
+            git -C "$RUNNER_TEMP/vcpkg" add ports/limitless versions/l-/limitless.json versions/baseline.json
+            git -C "$RUNNER_TEMP/vcpkg" commit -m "[limitless] add version ${LIMITLESS_VERSION}"
+            git -C "$RUNNER_TEMP/vcpkg" push --force-with-lease origin "limitless-${LIMITLESS_VERSION}"
+            create_or_update_pr \
+              "microsoft/vcpkg" \
+              "[limitless] add version ${LIMITLESS_VERSION}" \
+              $'Automated from the Limitless release workflow.\n\n- release tag: '"${RELEASE_TAG}"$'\n- source url: '"${SOURCE_URL}"$'\n- source sha512: '"${SOURCE_SHA512}" \
+              "${VCPKG_BASE}"
+          fi

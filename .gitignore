@@ -54,6 +54,8 @@ venv/
 /conan.lock
 /conanbuild*
 /conanrun*
+/test_package/build/
+/test_package/CMakeUserPresets.json
 
 # Editor / OS noise
 .DS_Store

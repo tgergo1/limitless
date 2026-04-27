@@ -30,6 +30,12 @@
 3. Build and run C/C++ consumers from install archive.
 4. Verify provenance attestation was generated.
 
+## Package registry follow-up
+
+1. Verify the `package-registry-prs` job opened or updated the ConanCenter pull request.
+2. Verify the `package-registry-prs` job opened or updated the vcpkg pull request.
+3. Respond to any ConanCenter or vcpkg review feedback until the upstream pull requests merge.
+
 ## Rollback
 
 - If critical regression is discovered, delete invalid release tag, open incident issue, and publish corrected tag after fixes.

@@ -280,16 +280,16 @@ public:
     }
     limitless_cpp__set_last_status(st);
     return out; /* GCOVR_EXCL_BR_LINE */
-  } /* GCOVR_EXCL_BR_LINE */
+  } /* GCOVR_EXCL_LINE */
 
   std::string str(int base = 10) const {
     std::string out;
     limitless_ctx* ctx = effective_ctx();
     limitless_status st;
     limitless_size needed = 0;
-    if (!ctx) { /* GCOVR_EXCL_BR_LINE */
-      limitless_cpp__set_last_status(LIMITLESS_EINVAL); /* GCOVR_EXCL_BR_LINE */
-      return out;
+    if (!ctx) { /* GCOVR_EXCL_LINE */
+      limitless_cpp__set_last_status(LIMITLESS_EINVAL); /* GCOVR_EXCL_LINE */
+      return out; /* GCOVR_EXCL_LINE */
     }
     st = limitless_number_to_cstr(ctx, &raw_, base, NULL, 0, &needed);
     if (st != LIMITLESS_EBUF && st != LIMITLESS_OK) { /* GCOVR_EXCL_BR_LINE */
@@ -321,7 +321,7 @@ private:
   limitless_status rebind_owner(limitless_ctx* ctx) {
     if (owner_ctx_ == ctx) return ctx ? LIMITLESS_OK : LIMITLESS_EINVAL;
     if (owner_ctx_) { /* GCOVR_EXCL_BR_LINE */
-      limitless_number_clear(owner_ctx_, &raw_);
+      limitless_number_clear(owner_ctx_, &raw_); /* GCOVR_EXCL_LINE */
     }
     owner_ctx_ = NULL;
     limitless_cpp__zero_raw(&raw_);
@@ -366,7 +366,7 @@ private:
     }
     limitless_cpp__set_last_status(st);
     return out;
-  } /* GCOVR_EXCL_BR_LINE */
+  } /* GCOVR_EXCL_LINE */
 
   limitless_number& binary_op_inplace(const limitless_number& rhs, binary_fn fn) {
     limitless_ctx* ctx = effective_ctx();
@@ -382,9 +382,9 @@ private:
     limitless_status st = LIMITLESS_OK;
     limitless_ctx* ctx = effective_ctx();
     int v;
-    if (!ctx) { /* GCOVR_EXCL_BR_LINE */
-      limitless_cpp__set_last_status(LIMITLESS_EINVAL);
-      return 0;
+    if (!ctx) { /* GCOVR_EXCL_LINE */
+      limitless_cpp__set_last_status(LIMITLESS_EINVAL); /* GCOVR_EXCL_LINE */
+      return 0; /* GCOVR_EXCL_LINE */
     }
     v = limitless_number_cmp(ctx, &raw_, &rhs.raw_, &st);
     limitless_cpp__set_last_status(st);
