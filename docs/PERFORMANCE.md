@@ -34,6 +34,15 @@ Three methods were used locally:
 2. full default validation matrix: `bash tests/ci/run_unix_matrix.sh default`
 3. allocation-counting and large-input regression tests in `tests/test_limitless.c`
 
+The benchmark executables now emit structured JSON per run with:
+
+- UTC start/end timestamps in ISO-8601 form
+- monotonic nanosecond durations
+- per-iteration and per-operation averages
+- three-sample min/median/max/mean/stdev aggregation in `build/bench/current.json`
+
+This keeps wall-clock timestamps useful for traceability while using a monotonic clock for the actual duration measurements.
+
 In addition, a local scaling probe was used during development to compare 32/128/512/2048-digit parse, format, and `div by 97` behavior before and after the change.
 
 ## Local benchmark results
@@ -48,6 +57,19 @@ Representative local runs on the task environment:
 | `bench_pow_modexp` | 493 µs | 240 µs | ~2.1x |
 
 `bench_bigint_mul` was not a target of this change. The representative run above was slightly noisier/slower, while the multiplication implementation itself was left unchanged and the benchmark gate still passes comfortably.
+
+## Similar-library comparison
+
+`limitless` intentionally keeps a tiny dependency-free single-header footprint, so the repository CI does not vendor or build heavyweight external bigint stacks for apples-to-apples benchmark runs. The practical comparison point is therefore methodology and optimization coverage versus state-of-the-art peers:
+
+| library | primary focus | timing/reporting style | mature performance techniques relevant here |
+| --- | --- | --- | --- |
+| `limitless` | exact integers + rationals in a dependency-free single header | repo benchmarks now record ISO-8601 UTC timestamps plus monotonic nanosecond durations and aggregated run statistics | single-limb fast paths, chunked parse/format, exact rational normalization shortcuts |
+| GMP | peak bigint throughput with assembly and platform specialization | external tools such as `tune/speed` typically use monotonic wall-clock timing and many repeated samples | Karatsuba/Toom-Cook/FFT multiplication, tuned division, aggressive limb-specialized code |
+| LibTomMath | portable pure-C multiple-precision integers | benchmark suites usually report repeated wall-clock durations around portable C kernels | Comba multiplication, tuned reduction methods, long-division style big integer routines |
+| Boost.Multiprecision (`cpp_int`) | C++ integration and generic backend selection | benchmarking is usually delegated to external harnesses (`std::chrono`, Google Benchmark, etc.) | backend swapping, expression-template optimizations, interoperability with GMP/MPIR backends |
+
+Compared with those libraries, `limitless` still trades raw peak throughput for exact-rational support and zero-dependency embeddability. The new benchmark format makes that trade-off measurable with enough detail to compare repeated runs, CI regressions, and future external-library probes using the same timestamp and duration fields.
 
 Scaling probe highlights for 2048-digit decimal inputs:
 

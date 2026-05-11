@@ -27,7 +27,7 @@ Current line: `experimental`, version `0.2.0`.
 
 - `limitless.h`: C API + implementation (`#define LIMITLESS_IMPLEMENTATION` in one TU)
 - `limitless.hpp`: C++ wrapper (`limitless::number`) with operators and RAII on top of the C API
-- `docs/PERFORMANCE.md`: performance findings, measurement notes, and remaining hotspots
+- `docs/PERFORMANCE.md`: performance findings, detailed benchmark/reporting notes, similar-library comparison, and remaining hotspots
 - `tests/`: baseline tests, generated matrix tests, stress tests, CI wrappers
   - API completeness + alias/failure-atomic tests
   - parser fuzz + valid roundtrip stress
@@ -312,6 +312,8 @@ bash tests/ci/run_repo_lint.sh
 bash tests/ci/run_fuzz_smoke.sh
 bash tests/ci/run_bench_regression.sh
 ```
+
+`tests/ci/run_bench_regression.sh` writes a detailed JSON report to `build/bench/current.json` with UTC timestamps, monotonic nanosecond durations, and three-run summary statistics for each benchmark.
 
 packaging smoke checks:
 

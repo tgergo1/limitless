@@ -1,6 +1,10 @@
 {
-  "bench_bigint_mul": 2000000.0,
-  "bench_div": 2000000.0,
-  "bench_parse_format": 2000000.0,
-  "bench_pow_modexp": 2000000.0
+  "schema_version": 1,
+  "unit": "ns",
+  "benchmarks": {
+    "bench_bigint_mul": 2000000000,
+    "bench_div": 2000000000,
+    "bench_parse_format": 2000000000,
+    "bench_pow_modexp": 2000000000
+  }
 }
