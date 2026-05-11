@@ -158,6 +158,11 @@ static void test_gcd_pow_modexp(void) {
   assert(limitless_number_modexp_u64(&ctx, &out, &a, 13, &mod) == LIMITLESS_OK);
   check_str(&ctx, &out, 10, "445");
 
+  assert(limitless_number_from_str(&ctx, &a, "-1234567890123456789012345678901234567890") == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &mod, 97) == LIMITLESS_OK);
+  assert(limitless_number_modexp_u64(&ctx, &out, &a, 29, &mod) == LIMITLESS_OK);
+  check_str(&ctx, &out, 10, "42");
+
   limitless_number_clear(&ctx, &a);
   limitless_number_clear(&ctx, &b);
   limitless_number_clear(&ctx, &out);

@@ -4,8 +4,8 @@
   "notes": "Representative GCC 13 ubuntu-latest medians rounded up from current benchmark runs.",
   "benchmarks": {
     "bench_bigint_mul": 15000,
-    "bench_div": 140000,
-    "bench_parse_format": 520000,
-    "bench_pow_modexp": 230000
+    "bench_div": 110000,
+    "bench_parse_format": 500000,
+    "bench_pow_modexp": 90000
   }
 }
