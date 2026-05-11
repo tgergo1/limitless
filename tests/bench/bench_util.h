@@ -30,6 +30,18 @@ typedef struct limitless_bench_report {
   uint64_t duration_ns;
 } limitless_bench_report;
 
+static int limitless_bench_timespec_to_ns(time_t seconds, long nanoseconds, uint64_t* out) {
+  const uint64_t ns_per_second = UINT64_C(1000000000);
+  const uint64_t max_seconds = UINT64_MAX / ns_per_second;
+  uint64_t seconds_u64;
+
+  if (out == NULL || seconds < 0 || nanoseconds < 0L || nanoseconds >= 1000000000L) return 0;
+  seconds_u64 = (uint64_t)seconds;
+  if (seconds_u64 > max_seconds) return 0;
+  *out = (seconds_u64 * ns_per_second) + (uint64_t)nanoseconds;
+  return 1;
+}
+
 static int limitless_bench_capture_utc(char* out, size_t out_size, uint64_t* unix_ns_out) {
 #ifdef _WIN32
   FILETIME ft;
@@ -57,11 +69,13 @@ static int limitless_bench_capture_utc(char* out, size_t out_size, uint64_t* uni
   struct timespec ts;
   struct tm tm_utc;
   int written;
+  uint64_t unix_ns;
 
   if (out == NULL || out_size < 32U || unix_ns_out == NULL) return 0;
   if (clock_gettime(CLOCK_REALTIME, &ts) != 0) return 0;
   if (gmtime_r(&ts.tv_sec, &tm_utc) == NULL) return 0;
-  *unix_ns_out = ((uint64_t)ts.tv_sec * UINT64_C(1000000000)) + (uint64_t)ts.tv_nsec;
+  if (!limitless_bench_timespec_to_ns(ts.tv_sec, ts.tv_nsec, &unix_ns)) return 0;
+  *unix_ns_out = unix_ns;
   written = snprintf(out,
                      out_size,
                      "%04d-%02d-%02dT%02d:%02d:%02d.%03ldZ",
@@ -93,10 +107,12 @@ static int limitless_bench_monotonic_ns(uint64_t* ns_out) {
   return 1;
 #else
   struct timespec ts;
+  uint64_t monotonic_ns;
 
   if (ns_out == NULL) return 0;
   if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) return 0;
-  *ns_out = ((uint64_t)ts.tv_sec * UINT64_C(1000000000)) + (uint64_t)ts.tv_nsec;
+  if (!limitless_bench_timespec_to_ns(ts.tv_sec, ts.tv_nsec, &monotonic_ns)) return 0;
+  *ns_out = monotonic_ns;
   return 1;
 #endif
 }
