@@ -253,6 +253,7 @@ static limitless_u32 limitless__powmod_u32(limitless_u32 base, limitless_u64 exp
   limitless_u64 acc;
   limitless_u64 cur;
 
+  if (mod == 0u) return 0u;
   acc = 1ULL % (limitless_u64)mod;
   cur = (limitless_u64)(base % mod);
   while (exp > 0ULL) {
@@ -1597,7 +1598,7 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
   }
   limitless__base_chunk_info(base, &chunk_base, &chunk_digits);
 
-  /* cap tracks digit capacity; allocate one extra byte for the terminator. */
+  /* cap tracks digit capacity, so reserve one extra byte for the terminator added after reversal. */
   rev = (char*)limitless__alloc_bytes(ctx, cap + 1);
   if (!rev) {
     st = LIMITLESS_EOOM;
