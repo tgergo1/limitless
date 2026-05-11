@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "unit": "ns",
-  "notes": "Representative GCC 13 ubuntu-latest medians rounded up from current benchmark runs.",
+  "notes": "Representative GCC 13 ubuntu-latest medians rounded up to conservative CI thresholds to absorb runner noise.",
   "benchmarks": {
     "bench_bigint_mul": 15000,
     "bench_div": 110000,

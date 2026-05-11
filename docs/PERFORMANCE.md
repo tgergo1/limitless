@@ -61,6 +61,8 @@ Representative local runs on the task environment:
 
 `bench_bigint_mul` was not a target of this change. The representative run above was slightly noisier/slower, while the multiplication implementation itself was left unchanged and the benchmark gate still passes comfortably.
 
+The benchmark gate baselines are intentionally looser than these representative medians so CI can tolerate normal runner variance without masking real regressions.
+
 ## Similar-library comparison
 
 `limitless` intentionally keeps a tiny dependency-free single-header footprint, so the repository CI does not vendor or build heavyweight external bigint stacks for apples-to-apples benchmark runs. The practical comparison point is therefore methodology and optimization coverage versus state-of-the-art peers:
