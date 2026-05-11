@@ -32,11 +32,10 @@ typedef struct limitless_bench_report {
 
 static int limitless_bench_timespec_to_ns(time_t seconds, long nanoseconds, uint64_t* out) {
   const uint64_t ns_per_second = UINT64_C(1000000000);
-  const long ns_per_second_long = 1000000000L;
   const uint64_t max_seconds = UINT64_MAX / ns_per_second;
   uint64_t seconds_u64;
 
-  if (out == NULL || seconds < 0 || nanoseconds < 0L || nanoseconds >= ns_per_second_long) return 0;
+  if (out == NULL || seconds < 0 || nanoseconds < 0L || nanoseconds >= (long)ns_per_second) return 0;
   seconds_u64 = (uint64_t)seconds;
   if (seconds_u64 > max_seconds) return 0;
   *out = (seconds_u64 * ns_per_second) + (uint64_t)nanoseconds;
@@ -49,7 +48,7 @@ static int limitless_bench_capture_utc(char* out, size_t out_size, uint64_t* uni
   SYSTEMTIME st;
   ULARGE_INTEGER ticks;
   const uint64_t ns_per_100ns_tick = UINT64_C(100);
-  /* 116444736000000000 is the FILETIME-to-Unix epoch delta in 100 ns ticks. */
+  /* 1601-01-01 to 1970-01-01 spans 116444736000000000 FILETIME ticks (100 ns units). */
   const uint64_t windows_to_unix_ns = UINT64_C(116444736000000000) * UINT64_C(100);
 
   if (out == NULL || out_size < 32U || unix_ns_out == NULL) return 0;

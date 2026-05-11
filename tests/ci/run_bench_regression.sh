@@ -32,6 +32,10 @@ import sys
 
 baseline_path, current_path, compiler_name, build_dir = sys.argv[1:5]
 
+def format_utc_timestamp(value):
+    value = value.astimezone(datetime.timezone.utc)
+    return value.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
 with open(baseline_path, 'r', encoding='utf-8') as f:
     baseline = json.load(f)
 
@@ -43,7 +47,7 @@ else:
     baseline_unit = "us"
 
 if baseline_unit == "us":
-    baseline_values = {key: int(float(value) * 1000.0) for key, value in baseline_values.items()}
+    baseline_values = {key: int(value) * 1000 for key, value in baseline_values.items()}
     baseline_unit = "ns"
 elif baseline_unit != "ns":
     raise SystemExit(f"unsupported baseline unit: {baseline_unit}")
@@ -101,8 +105,8 @@ current = {
     "schema_version": 2,
     "unit": "ns",
     "compiler": compiler_name,
-    "run_started_at_utc": run_started_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
-    "generated_at_utc": generated_at.isoformat(timespec="milliseconds").replace("+00:00", "Z"),
+    "run_started_at_utc": format_utc_timestamp(run_started_at),
+    "generated_at_utc": format_utc_timestamp(generated_at),
     "benchmarks": run_data,
 }
 

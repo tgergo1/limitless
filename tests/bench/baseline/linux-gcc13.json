@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "unit": "ns",
   "notes": "Representative GCC 13 ubuntu-latest medians rounded up from current benchmark runs.",
   "benchmarks": {
