@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
   "unit": "ns",
+  "notes": "Representative GCC 13 ubuntu-latest medians rounded up from current benchmark runs.",
   "benchmarks": {
-    "bench_bigint_mul": 2000000000,
-    "bench_div": 2000000000,
-    "bench_parse_format": 2000000000,
-    "bench_pow_modexp": 2000000000
+    "bench_bigint_mul": 15000,
+    "bench_div": 140000,
+    "bench_parse_format": 520000,
+    "bench_pow_modexp": 230000
   }
 }
