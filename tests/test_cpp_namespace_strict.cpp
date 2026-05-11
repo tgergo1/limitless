@@ -27,7 +27,7 @@ int main() {
     assert(d.str() == "4");
   }
 
-  limitless::limitless_cpp_set_default_ctx(NULL);
+  limitless::limitless_cpp_set_default_ctx(nullptr);
 
   return 0;
 }
