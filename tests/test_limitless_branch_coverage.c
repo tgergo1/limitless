@@ -12,9 +12,23 @@ typedef struct fail_alloc_state {
   int calls;
 } fail_alloc_state;
 
+typedef struct fail_size_alloc_state {
+  limitless_size fail_size;
+  int failed;
+} fail_size_alloc_state;
+
 static void* fail_alloc(void* user, limitless_size size) {
   fail_alloc_state* st = (fail_alloc_state*)user;
   if (st->calls++ >= st->fail_after) return NULL;
+  return malloc((size_t)size);
+}
+
+static void* fail_alloc_on_size(void* user, limitless_size size) {
+  fail_size_alloc_state* st = (fail_size_alloc_state*)user;
+  if (!st->failed && size == st->fail_size) {
+    st->failed = 1;
+    return NULL;
+  }
   return malloc((size_t)size);
 }
 
@@ -22,6 +36,16 @@ static void* fail_realloc(void* user, void* ptr, limitless_size old_size, limitl
   fail_alloc_state* st = (fail_alloc_state*)user;
   (void)old_size;
   if (st->calls++ >= st->fail_after) return NULL;
+  return realloc(ptr, (size_t)new_size);
+}
+
+static void* fail_realloc_on_size(void* user, void* ptr, limitless_size old_size, limitless_size new_size) {
+  fail_size_alloc_state* st = (fail_size_alloc_state*)user;
+  (void)old_size;
+  if (!st->failed && new_size == st->fail_size) {
+    st->failed = 1;
+    return NULL;
+  }
   return realloc(ptr, (size_t)new_size);
 }
 
@@ -42,6 +66,17 @@ static limitless_ctx make_fail_ctx(fail_alloc_state* state) {
   limitless_ctx ctx;
   alloc.alloc = fail_alloc;
   alloc.realloc = fail_realloc;
+  alloc.free = fail_free;
+  alloc.user = state;
+  assert(limitless_ctx_init(&ctx, &alloc) == LIMITLESS_OK);
+  return ctx;
+}
+
+static limitless_ctx make_fail_size_ctx(fail_size_alloc_state* state) {
+  limitless_alloc alloc;
+  limitless_ctx ctx;
+  alloc.alloc = fail_alloc_on_size;
+  alloc.realloc = fail_realloc_on_size;
   alloc.free = fail_free;
   alloc.user = state;
   assert(limitless_ctx_init(&ctx, &alloc) == LIMITLESS_OK);
@@ -158,6 +193,130 @@ static void test_null_guards(void) {
   limitless_number_clear(&ctx, &n);
   limitless_number_clear(&ctx, &a);
   limitless_number_clear(&ctx, &b);
+  limitless_number_clear(&ctx, &out);
+}
+
+static void test_to_cstr_buffer_and_sign_paths(void) {
+  limitless_ctx ctx = make_ctx();
+  limitless_number n_int, n_rat;
+  limitless_size need = 0;
+  char buf[64];
+  char buf2[64];
+
+  assert(limitless_number_init(&ctx, &n_int) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &n_rat) == LIMITLESS_OK);
+
+  assert(limitless_number_from_i64(&ctx, &n_int, (limitless_i64)-123456789) == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &n_rat, "-123456789/7") == LIMITLESS_OK);
+
+  /* INT path: exercise EBUF cleanup with b == NULL */
+  need = 0;
+  assert(limitless_number_to_cstr(&ctx, &n_int, 10, NULL, 0, &need) == LIMITLESS_EBUF);
+  assert(need > 0);
+  assert(limitless_number_to_cstr(&ctx, &n_int, 10, buf, (limitless_size)sizeof(buf), &need) == LIMITLESS_OK);
+  assert(strcmp(buf, "-123456789") == 0);
+
+  /* RAT path: exercise EBUF cleanup with b != NULL */
+  need = 0;
+  assert(limitless_number_to_cstr(&ctx, &n_rat, 10, NULL, 0, &need) == LIMITLESS_EBUF);
+  assert(need > 0);
+  assert(limitless_number_to_cstr(&ctx, &n_rat, 10, buf2, (limitless_size)sizeof(buf2), &need) == LIMITLESS_OK);
+  assert(strcmp(buf2, "-123456789/7") == 0);
+
+  limitless_number_clear(&ctx, &n_int);
+  limitless_number_clear(&ctx, &n_rat);
+}
+
+static void test_oom_to_cstr_paths(void) {
+  fail_alloc_state state;
+  fail_size_alloc_state size_state;
+  limitless_ctx ctx;
+  limitless_ctx ctx_size;
+  limitless_number n_int, n_rat;
+  char buf[64];
+  int step;
+  int saw_den_oom;
+
+  state.fail_after = 1000000;
+  state.calls = 0;
+  ctx = make_fail_ctx(&state);
+  assert(limitless_number_init(&ctx, &n_int) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &n_rat) == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &n_int, (limitless_i64)-123456789) == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx, &n_rat, "-123456789/7") == LIMITLESS_OK);
+
+  /* INT: force bigint_to_base_string to fail immediately to take the st != OK branch */
+  state.calls = 0;
+  state.fail_after = 0;
+  assert(limitless_number_to_cstr(&ctx, &n_int, 10, buf, (limitless_size)sizeof(buf), NULL) == LIMITLESS_EOOM);
+
+  /* RAT: find a fail_after that allows numerator to succeed but makes denominator fail */
+  saw_den_oom = 0;
+  for (step = 0; step < 256; ++step) {
+    limitless_status st_rat;
+    limitless_status st_int;
+    state.calls = 0;
+    state.fail_after = step;
+    st_rat = limitless_number_to_cstr(&ctx, &n_rat, 10, buf, (limitless_size)sizeof(buf), NULL);
+    state.calls = 0;
+    state.fail_after = step;
+    st_int = limitless_number_to_cstr(&ctx, &n_int, 10, buf, (limitless_size)sizeof(buf), NULL);
+    if (st_rat == LIMITLESS_EOOM && st_int == LIMITLESS_OK) {
+      saw_den_oom = 1;
+      break;
+    }
+  }
+  assert(saw_den_oom);
+
+  state.fail_after = 1000000;
+  limitless_number_clear(&ctx, &n_int);
+  limitless_number_clear(&ctx, &n_rat);
+
+  /* Deterministic: fail the sign-injection allocation (size == la + 2) */
+  size_state.fail_size = 11;
+  size_state.failed = 0;
+  ctx_size = make_fail_size_ctx(&size_state);
+  assert(limitless_number_init(&ctx_size, &n_int) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx_size, &n_rat) == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx_size, &n_int, (limitless_i64)-123456789) == LIMITLESS_OK);
+  assert(limitless_number_from_str(&ctx_size, &n_rat, "-123456789/7") == LIMITLESS_OK);
+  assert(limitless_number_to_cstr(&ctx_size, &n_int, 10, buf, (limitless_size)sizeof(buf), NULL) == LIMITLESS_EOOM);
+  assert(size_state.failed);
+  size_state.failed = 0;
+  assert(limitless_number_to_cstr(&ctx_size, &n_rat, 10, buf, (limitless_size)sizeof(buf), NULL) == LIMITLESS_EOOM);
+  assert(size_state.failed);
+
+  limitless_number_clear(&ctx_size, &n_int);
+  limitless_number_clear(&ctx_size, &n_rat);
+}
+
+static void test_modexp_u32_fast_path_oom(void) {
+  fail_alloc_state state;
+  limitless_ctx ctx;
+  limitless_number base, mod, out;
+
+  state.fail_after = 1000000;
+  state.calls = 0;
+  ctx = make_fail_ctx(&state);
+
+  assert(limitless_number_init(&ctx, &base) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &mod) == LIMITLESS_OK);
+  assert(limitless_number_init(&ctx, &out) == LIMITLESS_OK);
+
+  assert(limitless_number_from_i64(&ctx, &base, 5) == LIMITLESS_OK);
+  assert(limitless_number_from_u64(&ctx, &mod, 97u) == LIMITLESS_OK);
+
+  /* Ensure the u32 fast path works normally first */
+  assert(limitless_number_modexp_u64(&ctx, &out, &base, 13u, &mod) == LIMITLESS_OK);
+
+  /* Force OOM at the first allocation in the fast-path output conversion */
+  state.calls = 0;
+  state.fail_after = 0;
+  assert(limitless_number_modexp_u64(&ctx, &out, &base, 13u, &mod) == LIMITLESS_EOOM);
+
+  state.fail_after = 1000000;
+  limitless_number_clear(&ctx, &base);
+  limitless_number_clear(&ctx, &mod);
   limitless_number_clear(&ctx, &out);
 }
 
@@ -317,6 +476,9 @@ static void test_oom_modexp_negative_base(void) {
 
 int main(void) {
   test_null_guards();
+  test_to_cstr_buffer_and_sign_paths();
+  test_oom_to_cstr_paths();
+  test_modexp_u32_fast_path_oom();
   test_karatsuba_threshold_edges();
   test_modexp_zero_modulus();
   test_oom_rational_div();

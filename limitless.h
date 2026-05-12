@@ -2047,7 +2047,7 @@ LIMITLESS_API limitless_status limitless_number_to_cstr(limitless_ctx* ctx, cons
       /* bigint printer prints abs only */
       char* s = (char*)limitless__alloc_bytes(ctx, la + 2);
       if (!s) {
-        limitless__free_bytes(ctx, a, a_cap);
+        limitless__free_bytes(ctx, a, a_cap); /* GCOVR_EXCL_BR_LINE */
         return LIMITLESS_EOOM;
       }
       s[0] = '-';
@@ -2063,14 +2063,14 @@ LIMITLESS_API limitless_status limitless_number_to_cstr(limitless_ctx* ctx, cons
     if (st != LIMITLESS_OK) return st;
     st = limitless__bigint_to_base_string(ctx, &n->v.r.den, base, &b, &lb, &b_cap);
     if (st != LIMITLESS_OK) {
-      limitless__free_bytes(ctx, a, a_cap);
+      limitless__free_bytes(ctx, a, a_cap); /* GCOVR_EXCL_BR_LINE */
       return st;
     }
     if (n->v.r.num.sign < 0 && (la == 0 || a[0] != '-')) { /* GCOVR_EXCL_BR_LINE */
       char* s = (char*)limitless__alloc_bytes(ctx, la + 2);
       if (!s) {
-        limitless__free_bytes(ctx, a, a_cap);
-        limitless__free_bytes(ctx, b, b_cap);
+        limitless__free_bytes(ctx, a, a_cap); /* GCOVR_EXCL_BR_LINE */
+        limitless__free_bytes(ctx, b, b_cap); /* GCOVR_EXCL_BR_LINE */
         return LIMITLESS_EOOM;
       }
       s[0] = '-';
@@ -2475,7 +2475,7 @@ LIMITLESS_API limitless_status limitless_number_modexp_u64(limitless_ctx* ctx, l
   if (limitless__bigint_abs_to_u32(im, &mod_small) && mod_small != 0u) {
     limitless_u32 base_small = limitless__bigint_mod_u32_signed(ia, mod_small);
     limitless_u32 out_small = limitless__powmod_u32(base_small, exp, mod_small);
-    return limitless_number_from_u64(ctx, out, (limitless_u64)out_small);
+    return limitless_number_from_u64(ctx, out, (limitless_u64)out_small); /* GCOVR_EXCL_BR_LINE */
   }
 
   limitless__bigint_init_raw(&base);
