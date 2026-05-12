@@ -64,8 +64,18 @@ jobs:
       - name: Remove raw gcov data before Codecov upload
         run: find build/coverage \( -name '*.gcda' -o -name '*.gcno' \) -exec rm -f {} +
 
-      - name: Upload coverage reports to Codecov
-        if: success()
+      - name: Upload coverage reports to Codecov (pull request)
+        if: success() && github.event_name == 'pull_request'
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: build/coverage/coverage.xml
+          disable_search: true
+          override_pr: ${{ github.event.pull_request.number }}
+          override_branch: ${{ github.head_ref }}
+
+      - name: Upload coverage reports to Codecov (push)
+        if: success() && github.event_name != 'pull_request'
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
