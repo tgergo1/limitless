@@ -16,54 +16,107 @@ compile_bench() {
   "$CC_BIN" -std=c99 -O2 -Wall -Wextra -Werror -pedantic "$src" -o "$out"
 }
 
-median_of_three() {
-  local exe="$1"
-  local a b c
-  a="$($exe)"
-  b="$($exe)"
-  c="$($exe)"
-  python3 - "$a" "$b" "$c" <<'PY'
-import statistics
-import sys
-vals = [float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])]
-print(f"{statistics.median(vals):.3f}")
-PY
-}
-
 compile_bench "$BUILD_DIR/bench_bigint_mul" tests/bench/bench_bigint_mul.c
 compile_bench "$BUILD_DIR/bench_div" tests/bench/bench_div.c
 compile_bench "$BUILD_DIR/bench_parse_format" tests/bench/bench_parse_format.c
 compile_bench "$BUILD_DIR/bench_pow_modexp" tests/bench/bench_pow_modexp.c
 
 current_json="$BUILD_DIR/current.json"
-cat > "$current_json" <<EOF_JSON
-{
-  "bench_bigint_mul": $(median_of_three "$BUILD_DIR/bench_bigint_mul"),
-  "bench_div": $(median_of_three "$BUILD_DIR/bench_div"),
-  "bench_parse_format": $(median_of_three "$BUILD_DIR/bench_parse_format"),
-  "bench_pow_modexp": $(median_of_three "$BUILD_DIR/bench_pow_modexp")
-}
-EOF_JSON
-
-python3 - "$BASELINE_FILE" "$current_json" <<'PY'
+python3 - "$BASELINE_FILE" "$current_json" "$CC_BIN" "$BUILD_DIR" <<'PY'
+import datetime
 import json
+import os
+import statistics
+import subprocess
 import sys
 
-baseline_path, current_path = sys.argv[1], sys.argv[2]
+baseline_path, current_path, compiler_name, build_dir = sys.argv[1:5]
+
+def format_utc_timestamp(value):
+    value = value.astimezone(datetime.timezone.utc)
+    return value.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
 with open(baseline_path, 'r', encoding='utf-8') as f:
     baseline = json.load(f)
-with open(current_path, 'r', encoding='utf-8') as f:
-    current = json.load(f)
 
+if isinstance(baseline, dict) and "benchmarks" in baseline:
+    baseline_values = baseline["benchmarks"]
+    baseline_unit = baseline.get("unit", "ns")
+else:
+    baseline_values = baseline
+    baseline_unit = "us"
+
+if baseline_unit == "us":
+    baseline_values = {key: int(value) * 1000 for key, value in baseline_values.items()}
+    baseline_unit = "ns"
+elif baseline_unit != "ns":
+    raise SystemExit(f"unsupported baseline unit: {baseline_unit}")
+
+benchmarks = [
+    ("bench_bigint_mul", os.path.join(build_dir, "bench_bigint_mul")),
+    ("bench_div", os.path.join(build_dir, "bench_div")),
+    ("bench_parse_format", os.path.join(build_dir, "bench_parse_format")),
+    ("bench_pow_modexp", os.path.join(build_dir, "bench_pow_modexp")),
+]
+
+run_started_at = datetime.datetime.now(datetime.timezone.utc)
+run_data = {}
 violations = []
-for key, base in baseline.items():
-    cur = current.get(key)
-    if cur is None:
+
+for benchmark_name, executable in benchmarks:
+    runs = []
+    durations = []
+    for _ in range(3):
+        payload = subprocess.check_output([executable], text=True)
+        run = json.loads(payload)
+        duration_ns = int(run["duration_ns"])
+        durations.append(duration_ns)
+        runs.append(run)
+
+    median_ns = int(statistics.median(durations))
+    mean_ns = statistics.fmean(durations)
+    stdev_ns = statistics.stdev(durations) if len(durations) > 1 else 0.0
+    baseline_ns = int(baseline_values[benchmark_name])
+    limit_ns = int(round(float(baseline_ns) * 1.15))
+    status = "pass" if median_ns <= limit_ns else "fail"
+
+    run_data[benchmark_name] = {
+        "samples_ns": durations,
+        "min_duration_ns": min(durations),
+        "median_duration_ns": median_ns,
+        "max_duration_ns": max(durations),
+        "mean_duration_ns": round(mean_ns, 3),
+        "stdev_duration_ns": round(stdev_ns, 3),
+        "median_duration_us": round(median_ns / 1000.0, 3),
+        "baseline_duration_ns": baseline_ns,
+        "regression_limit_ns": limit_ns,
+        "regression_limit_ratio": 1.15,
+        "status": status,
+        "runs": runs,
+    }
+
+    if status != "pass":
+        violations.append(
+            f"{benchmark_name}: median={median_ns}ns baseline={baseline_ns}ns limit={limit_ns}ns"
+        )
+
+generated_at = datetime.datetime.now(datetime.timezone.utc)
+current = {
+    "schema_version": 2,
+    "unit": "ns",
+    "compiler": compiler_name,
+    "run_started_at_utc": format_utc_timestamp(run_started_at),
+    "generated_at_utc": format_utc_timestamp(generated_at),
+    "benchmarks": run_data,
+}
+
+with open(current_path, 'w', encoding='utf-8') as f:
+    json.dump(current, f, indent=2)
+    f.write('\n')
+
+for key in baseline_values:
+    if key not in run_data:
         violations.append(f"missing benchmark key: {key}")
-        continue
-    limit = float(base) * 1.15
-    if float(cur) > limit:
-        violations.append(f"{key}: current={cur:.3f} baseline={base:.3f} limit={limit:.3f}")
 
 if violations:
     print("benchmark regression detected:", file=sys.stderr)

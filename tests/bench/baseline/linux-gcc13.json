@@ -1,6 +1,11 @@
 {
-  "bench_bigint_mul": 2000000.0,
-  "bench_div": 2000000.0,
-  "bench_parse_format": 2000000.0,
-  "bench_pow_modexp": 2000000.0
+  "schema_version": 2,
+  "unit": "ns",
+  "notes": "Representative GCC 13 ubuntu-latest medians rounded up to conservative CI thresholds to absorb runner noise.",
+  "benchmarks": {
+    "bench_bigint_mul": 15000,
+    "bench_div": 110000,
+    "bench_parse_format": 500000,
+    "bench_pow_modexp": 90000
+  }
 }

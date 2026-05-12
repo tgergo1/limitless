@@ -158,6 +158,30 @@ static void test_gcd_pow_modexp(void) {
   assert(limitless_number_modexp_u64(&ctx, &out, &a, 13, &mod) == LIMITLESS_OK);
   check_str(&ctx, &out, 10, "445");
 
+  assert(limitless_number_from_str(&ctx, &a, "-1234567890123456789012345678901234567890") == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &mod, 97) == LIMITLESS_OK);
+  assert(limitless_number_modexp_u64(&ctx, &out, &a, 29, &mod) == LIMITLESS_OK);
+  check_str(&ctx, &out, 10, "42");
+
+  assert(limitless_number_from_i64(&ctx, &a, 0) == LIMITLESS_OK);
+  assert(limitless_number_modexp_u64(&ctx, &out, &a, 0, &mod) == LIMITLESS_OK);
+  check_str(&ctx, &out, 10, "1");
+
+  assert(limitless_number_modexp_u64(&ctx, &out, &a, 7, &mod) == LIMITLESS_OK);
+  check_str(&ctx, &out, 10, "0");
+
+  assert(limitless_number_from_i64(&ctx, &a, -5) == LIMITLESS_OK);
+  assert(limitless_number_from_i64(&ctx, &mod, 1) == LIMITLESS_OK);
+  assert(limitless_number_modexp_u64(&ctx, &out, &a, 3, &mod) == LIMITLESS_OK);
+  check_str(&ctx, &out, 10, "0");
+
+  assert(limitless_number_from_i64(&ctx, &a, 7) == LIMITLESS_OK);
+  check_str(&ctx, &a, 10, "7");
+  assert(limitless_number_from_str(&ctx, &a, "1234") == LIMITLESS_OK);
+  check_str(&ctx, &a, 10, "1234");
+  assert(limitless_number_from_str(&ctx, &a, "12345") == LIMITLESS_OK);
+  check_str(&ctx, &a, 10, "12345");
+
   limitless_number_clear(&ctx, &a);
   limitless_number_clear(&ctx, &b);
   limitless_number_clear(&ctx, &out);

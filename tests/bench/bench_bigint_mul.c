@@ -1,22 +1,17 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
-#include <stdio.h>
-#include <time.h>
+#include "bench_util.h"
 
 #define LIMITLESS_IMPLEMENTATION
 #include "../../limitless.h"
 
-static double elapsed_us(clock_t start, clock_t end) {
-  return ((double)(end - start) * 1000000.0) / (double)CLOCKS_PER_SEC;
-}
-
 int main(void) {
+  const uint64_t iterations = 120U;
   limitless_ctx ctx;
   limitless_number a;
   limitless_number b;
   limitless_number out;
   int i;
-  clock_t t0;
-  clock_t t1;
+  limitless_bench_report report;
 
   if (limitless_ctx_init_default(&ctx) != LIMITLESS_OK) return 1;
   if (limitless_number_init(&ctx, &a) != LIMITLESS_OK) return 1;
@@ -26,13 +21,13 @@ int main(void) {
   if (limitless_number_from_str(&ctx, &a, "123456789012345678901234567890123456789012345678901234567890") != LIMITLESS_OK) return 1;
   if (limitless_number_from_str(&ctx, &b, "998877665544332211009988776655443322110099887766554433221100") != LIMITLESS_OK) return 1;
 
-  t0 = clock();
-  for (i = 0; i < 120; ++i) {
+  if (!limitless_bench_begin(&report, "bench_bigint_mul", "limitless_number_mul", iterations, 1U)) return 1;
+  for (i = 0; i < (int)iterations; ++i) {
     if (limitless_number_mul(&ctx, &out, &a, &b) != LIMITLESS_OK) return 1;
   }
-  t1 = clock();
+  if (!limitless_bench_end(&report)) return 1;
 
-  printf("%.3f\n", elapsed_us(t0, t1));
+  limitless_bench_print_json(&report);
   limitless_number_clear(&ctx, &a);
   limitless_number_clear(&ctx, &b);
   limitless_number_clear(&ctx, &out);

@@ -233,13 +233,48 @@ static void limitless__mem_zero(void* p, limitless_size n) {
 }
 
 static void limitless__mem_copy(void* dst, const void* src, limitless_size n) {
-  limitless_size i;
-  limitless_u8* d = (limitless_u8*)dst;
-  const limitless_u8* s = (const limitless_u8*)src;
   if (n == 0) return;
-  if (!d || !s) return;
-  for (i = 0; i < n; ++i) {
-    d[i] = s[i];
+  if (!dst || !src) return;
+#if defined(__clang__) || defined(__GNUC__)
+  __builtin_memcpy(dst, src, n);
+#else
+  {
+    limitless_size i;
+    limitless_u8* d = (limitless_u8*)dst;
+    const limitless_u8* s = (const limitless_u8*)src;
+    for (i = 0; i < n; ++i) {
+      d[i] = s[i];
+    }
+  }
+#endif
+}
+
+static limitless_u32 limitless__powmod_u32(limitless_u32 base, limitless_u64 exp, limitless_u32 mod) {
+  limitless_u64 acc;
+  limitless_u64 cur;
+
+  if (mod == 0u) return 0u;
+  acc = 1ULL % (limitless_u64)mod;
+  cur = (limitless_u64)(base % mod);
+  while (exp > 0ULL) {
+    if (exp & 1ULL) {
+      acc = (acc * cur) % (limitless_u64)mod;
+    }
+    exp >>= 1;
+    if (exp == 0ULL) break;
+    cur = (cur * cur) % (limitless_u64)mod;
+  }
+  return (limitless_u32)acc;
+}
+
+static void limitless__reverse_chars(char* s, limitless_size n) {
+  limitless_size i = 0;
+  if (!s) return;
+  while (i < n / 2) {
+    char tmp = s[i];
+    s[i] = s[n - 1 - i];
+    s[n - 1 - i] = tmp;
+    ++i;
   }
 }
 
@@ -843,6 +878,14 @@ static limitless_u32 limitless__bigint_mod_small(const limitless_bigint* a, limi
     --i;
   }
   return (limitless_u32)rem;
+}
+
+static limitless_u32 limitless__bigint_mod_u32_signed(const limitless_bigint* a, limitless_u32 mod) {
+  limitless_u32 rem;
+  if (mod == 0u) return 0u;
+  rem = limitless__bigint_mod_small(a, mod);
+  if (a->sign < 0 && rem != 0u) rem = mod - rem;
+  return rem;
 }
 
 static int limitless__bigint_abs_to_u32(const limitless_bigint* a, limitless_u32* out) {
@@ -1531,7 +1574,7 @@ static limitless_status limitless__bigint_from_base_digits(limitless_ctx* ctx, l
   return LIMITLESS_OK;
 }
 
-static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, const limitless_bigint* a, int base, char** out_s, limitless_size* out_len) {
+static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, const limitless_bigint* a, int base, char** out_s, limitless_size* out_len, limitless_size* out_cap) {
   limitless_bigint t;
   limitless_size bits;
   limitless_size cap = 0;
@@ -1539,10 +1582,9 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
   limitless_u32 chunk_base;
   limitless_size chunk_digits;
   char* rev = NULL;
-  char* s = NULL;
   limitless_status st;
 
-  if (base < 2 || base > 36 || !out_s || !out_len) return LIMITLESS_EINVAL;
+  if (base < 2 || base > 36 || !out_s || !out_len || !out_cap) return LIMITLESS_EINVAL;
 
   limitless__bigint_init_raw(&t);
   st = limitless__bigint_abs_copy(ctx, &t, a);
@@ -1556,7 +1598,8 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
   }
   limitless__base_chunk_info(base, &chunk_base, &chunk_digits);
 
-  rev = (char*)limitless__alloc_bytes(ctx, cap);
+  /* cap tracks digit capacity, so reserve one extra byte for the terminator added after reversal. */
+  rev = (char*)limitless__alloc_bytes(ctx, cap + 1);
   if (!rev) {
     st = LIMITLESS_EOOM;
     goto cleanup;
@@ -1583,7 +1626,7 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
           }
           new_cap *= 2u;
         }
-        grown = (char*)limitless__realloc_bytes(ctx, rev, cap, new_cap);
+        grown = (char*)limitless__realloc_bytes(ctx, rev, cap + 1, new_cap + 1);
         if (!grown) {
           st = LIMITLESS_EOOM;
           goto cleanup;
@@ -1599,26 +1642,16 @@ static limitless_status limitless__bigint_to_base_string(limitless_ctx* ctx, con
     }
   }
 
-  s = (char*)limitless__alloc_bytes(ctx, n + 1);
-  if (!s) {
-    st = LIMITLESS_EOOM;
-    goto cleanup;
-  }
-
-  {
-    limitless_size i;
-    for (i = 0; i < n; ++i) s[i] = rev[n - 1 - i];
-    s[n] = '\0';
-  }
-
-  *out_s = s;
+  limitless__reverse_chars(rev, n);
+  rev[n] = '\0';
+  *out_s = rev;
   *out_len = n;
-  s = NULL;
+  *out_cap = cap + 1;
+  rev = NULL;
   st = LIMITLESS_OK;
 
 cleanup:
-  if (rev) limitless__free_bytes(ctx, rev, cap);
-  if (s) limitless__free_bytes(ctx, s, n + 1);
+  if (rev) limitless__free_bytes(ctx, rev, cap + 1);
   limitless__bigint_clear_raw(ctx, &t);
   return st;
 }
@@ -2001,47 +2034,51 @@ LIMITLESS_API limitless_status limitless_number_to_cstr(limitless_ctx* ctx, cons
   char* b = NULL;
   limitless_size la = 0;
   limitless_size lb = 0;
+  limitless_size a_cap = 0;
+  limitless_size b_cap = 0;
   limitless_size need = 0;
   if (!ctx || !n || base < 2 || base > 36) return LIMITLESS_EINVAL;
 
   if (n->kind == LIMITLESS_KIND_INT) {
-    st = limitless__bigint_to_base_string(ctx, &n->v.i, base, &a, &la);
+    st = limitless__bigint_to_base_string(ctx, &n->v.i, base, &a, &la, &a_cap);
     if (st != LIMITLESS_OK) return st;
     need = la;
     if (n->v.i.sign < 0 && (la == 0 || a[0] != '-')) { /* GCOVR_EXCL_BR_LINE */
       /* bigint printer prints abs only */
       char* s = (char*)limitless__alloc_bytes(ctx, la + 2);
       if (!s) {
-        limitless__free_bytes(ctx, a, la + 1);
+        limitless__free_bytes(ctx, a, a_cap); /* GCOVR_EXCL_BR_LINE */
         return LIMITLESS_EOOM;
       }
       s[0] = '-';
       limitless__mem_copy(s + 1, a, la + 1);
-      limitless__free_bytes(ctx, a, la + 1);
+      limitless__free_bytes(ctx, a, a_cap);
       a = s;
       la += 1;
+      a_cap = la + 1;
       need = la;
     }
   } else if (n->kind == LIMITLESS_KIND_RAT) {
-    st = limitless__bigint_to_base_string(ctx, &n->v.r.num, base, &a, &la);
+    st = limitless__bigint_to_base_string(ctx, &n->v.r.num, base, &a, &la, &a_cap);
     if (st != LIMITLESS_OK) return st;
-    st = limitless__bigint_to_base_string(ctx, &n->v.r.den, base, &b, &lb);
+    st = limitless__bigint_to_base_string(ctx, &n->v.r.den, base, &b, &lb, &b_cap);
     if (st != LIMITLESS_OK) {
-      limitless__free_bytes(ctx, a, la + 1);
+      limitless__free_bytes(ctx, a, a_cap); /* GCOVR_EXCL_BR_LINE */
       return st;
     }
     if (n->v.r.num.sign < 0 && (la == 0 || a[0] != '-')) { /* GCOVR_EXCL_BR_LINE */
       char* s = (char*)limitless__alloc_bytes(ctx, la + 2);
       if (!s) {
-        limitless__free_bytes(ctx, a, la + 1);
-        limitless__free_bytes(ctx, b, lb + 1);
+        limitless__free_bytes(ctx, a, a_cap); /* GCOVR_EXCL_BR_LINE */
+        limitless__free_bytes(ctx, b, b_cap); /* GCOVR_EXCL_BR_LINE */
         return LIMITLESS_EOOM;
       }
       s[0] = '-';
       limitless__mem_copy(s + 1, a, la + 1);
-      limitless__free_bytes(ctx, a, la + 1);
+      limitless__free_bytes(ctx, a, a_cap);
       a = s;
       la += 1;
+      a_cap = la + 1;
     }
     need = la + 1 + lb;
   } else {
@@ -2050,8 +2087,8 @@ LIMITLESS_API limitless_status limitless_number_to_cstr(limitless_ctx* ctx, cons
 
   if (written) *written = need;
   if (!buf || cap <= need) {
-    if (a) limitless__free_bytes(ctx, a, la + 1);
-    if (b) limitless__free_bytes(ctx, b, lb + 1);
+    if (a) limitless__free_bytes(ctx, a, a_cap);
+    if (b) limitless__free_bytes(ctx, b, b_cap);
     return LIMITLESS_EBUF;
   }
 
@@ -2065,8 +2102,8 @@ LIMITLESS_API limitless_status limitless_number_to_cstr(limitless_ctx* ctx, cons
     buf[la + 1 + lb] = '\0';
   }
 
-  if (a) limitless__free_bytes(ctx, a, la + 1);
-  if (b) limitless__free_bytes(ctx, b, lb + 1);
+  if (a) limitless__free_bytes(ctx, a, a_cap);
+  if (b) limitless__free_bytes(ctx, b, b_cap);
   return LIMITLESS_OK;
 }
 
@@ -2428,11 +2465,18 @@ LIMITLESS_API limitless_status limitless_number_modexp_u64(limitless_ctx* ctx, l
   limitless_bigint base, res, t, m;
   limitless_status st;
   limitless_number tmp;
+  limitless_u32 mod_small;
 
   if (!ctx || !out || !a || !mod) return LIMITLESS_EINVAL;
   if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK) return LIMITLESS_ETYPE;
   if (limitless__number_get_integer_ref(mod, &im) != LIMITLESS_OK) return LIMITLESS_ETYPE;
   if (im->sign <= 0 || im->used == 0) return LIMITLESS_EDIVZERO; /* GCOVR_EXCL_BR_LINE */
+
+  if (limitless__bigint_abs_to_u32(im, &mod_small) && mod_small != 0u) {
+    limitless_u32 base_small = limitless__bigint_mod_u32_signed(ia, mod_small);
+    limitless_u32 out_small = limitless__powmod_u32(base_small, exp, mod_small);
+    return limitless_number_from_u64(ctx, out, (limitless_u64)out_small); /* GCOVR_EXCL_BR_LINE */
+  }
 
   limitless__bigint_init_raw(&base);
   limitless__bigint_init_raw(&res);
