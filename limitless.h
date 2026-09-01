@@ -152,24 +152,76 @@ LIMITLESS_API limitless_status limitless_number_from_ll(limitless_ctx* ctx, limi
 LIMITLESS_API limitless_status limitless_number_from_ull(limitless_ctx* ctx, limitless_number* out, unsigned long long v);
 LIMITLESS_API limitless_status limitless_number_from_float_exact(limitless_ctx* ctx, limitless_number* out, float v);
 LIMITLESS_API limitless_status limitless_number_from_double_exact(limitless_ctx* ctx, limitless_number* out, double v);
+/* Parses a base-10 integer, decimal fraction, or scientific literal exactly. */
+LIMITLESS_API limitless_status limitless_number_from_decimal(limitless_ctx* ctx, limitless_number* out, const char* s);
 LIMITLESS_API limitless_status limitless_number_from_cstr(limitless_ctx* ctx, limitless_number* out, const char* s, int base);
 LIMITLESS_API limitless_status limitless_number_from_str(limitless_ctx* ctx, limitless_number* out, const char* s);
 LIMITLESS_API limitless_status limitless_number_to_cstr(limitless_ctx* ctx, const limitless_number* n, int base, char* buf, limitless_size cap, limitless_size* written);
 LIMITLESS_API limitless_status limitless_number_to_str(limitless_ctx* ctx, const limitless_number* n, char* buf, limitless_size cap, limitless_size* written);
 LIMITLESS_API limitless_status limitless_number_to_i64(limitless_ctx* ctx, const limitless_number* n, limitless_i64* out);
 LIMITLESS_API limitless_status limitless_number_to_u64(limitless_ctx* ctx, const limitless_number* n, limitless_u64* out);
+LIMITLESS_API limitless_status limitless_number_to_float(limitless_ctx* ctx, const limitless_number* n, float* out);
+LIMITLESS_API limitless_status limitless_number_to_double(limitless_ctx* ctx, const limitless_number* n, double* out);
+
+/*
+ * Canonical binary format:
+ *   00                            integer zero
+ *   01 | magnitude                positive integer
+ *   02 | magnitude                negative integer
+ *   03 | varint(num bytes) | num | den   positive rational
+ *   04 | varint(num bytes) | num | den   negative rational
+ * Magnitudes are non-empty, big-endian, and have no leading zero.  The
+ * length varint is big-endian base-128 and minimally encoded.
+ */
+LIMITLESS_API limitless_status limitless_number_to_binary(limitless_ctx* ctx, const limitless_number* n, limitless_u8* buf, limitless_size cap, limitless_size* written);
+LIMITLESS_API limitless_status limitless_number_from_binary(limitless_ctx* ctx, limitless_number* out, const limitless_u8* data, limitless_size len);
+/* Byte-oriented aliases for the canonical binary APIs. */
+LIMITLESS_API limitless_status limitless_number_to_bytes(limitless_ctx* ctx, const limitless_number* n, limitless_u8* buf, limitless_size cap, limitless_size* written);
+LIMITLESS_API limitless_status limitless_number_from_bytes(limitless_ctx* ctx, limitless_number* out, const limitless_u8* data, limitless_size len);
 
 LIMITLESS_API limitless_status limitless_number_add(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
 LIMITLESS_API limitless_status limitless_number_sub(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
 LIMITLESS_API limitless_status limitless_number_mul(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
 LIMITLESS_API limitless_status limitless_number_div(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+/* Integer quotient/remainder operations truncate their quotient toward zero. */
+LIMITLESS_API limitless_status limitless_number_divmod(limitless_ctx* ctx, limitless_number* quotient, limitless_number* remainder, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_mod(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
 LIMITLESS_API limitless_status limitless_number_neg(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
 LIMITLESS_API limitless_status limitless_number_abs(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
 LIMITLESS_API int limitless_number_cmp(limitless_ctx* ctx, const limitless_number* a, const limitless_number* b, limitless_status* st);
 
 LIMITLESS_API limitless_status limitless_number_gcd(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_lcm(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_extended_gcd(limitless_ctx* ctx, limitless_number* gcd, limitless_number* x, limitless_number* y, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_xgcd(limitless_ctx* ctx, limitless_number* gcd, limitless_number* x, limitless_number* y, const limitless_number* a, const limitless_number* b);
+/* The modulus must be positive; non-coprime operands return LIMITLESS_EINVAL. */
+LIMITLESS_API limitless_status limitless_number_mod_inverse(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* mod);
 LIMITLESS_API limitless_status limitless_number_pow_u64(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_u64 exp);
 LIMITLESS_API limitless_status limitless_number_modexp_u64(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_u64 exp, const limitless_number* mod);
+LIMITLESS_API limitless_status limitless_number_is_prime(limitless_ctx* ctx, const limitless_number* n, int* out);
+/* Returns the least prime strictly greater than n (or 2 for n < 2). */
+LIMITLESS_API limitless_status limitless_number_next_prime(limitless_ctx* ctx, limitless_number* out, const limitless_number* n);
+
+/* Bitwise operations use unbounded two's-complement semantics. */
+LIMITLESS_API limitless_status limitless_number_bit_and(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_bit_or(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_bit_xor(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b);
+LIMITLESS_API limitless_status limitless_number_bit_not(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
+/* Logical shifts act on the magnitude and retain the operand sign. */
+LIMITLESS_API limitless_status limitless_number_shl(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits);
+LIMITLESS_API limitless_status limitless_number_shr(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits);
+LIMITLESS_API limitless_status limitless_number_shift_left(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits);
+LIMITLESS_API limitless_status limitless_number_shift_right(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits);
+/* Bit inspection and mutation address the magnitude, not a sign extension. */
+LIMITLESS_API limitless_status limitless_number_bit_length(limitless_ctx* ctx, const limitless_number* n, limitless_size* out);
+LIMITLESS_API limitless_status limitless_number_get_bit(limitless_ctx* ctx, const limitless_number* n, limitless_size bit, int* out);
+LIMITLESS_API limitless_status limitless_number_set_bit(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bit);
+LIMITLESS_API limitless_status limitless_number_clear_bit(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bit);
+LIMITLESS_API limitless_status limitless_number_assign_bit(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bit, int value);
+
+LIMITLESS_API limitless_status limitless_number_floor(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
+LIMITLESS_API limitless_status limitless_number_ceil(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
+LIMITLESS_API limitless_status limitless_number_trunc(limitless_ctx* ctx, limitless_number* out, const limitless_number* a);
 
 LIMITLESS_API int limitless_number_is_zero(const limitless_number* n);
 LIMITLESS_API int limitless_number_is_integer(const limitless_number* n);
@@ -682,6 +734,7 @@ static limitless_status limitless__bigint_shl_bits(limitless_ctx* ctx, limitless
   }
   limb_shift = bits / (limitless_size)LIMITLESS_LIMB_BITS;
   bit_shift = bits % (limitless_size)LIMITLESS_LIMB_BITS;
+  if (a->used > (~(limitless_size)0) - limb_shift - 1u) return LIMITLESS_EOOM;
   st = limitless__bigint_reserve(ctx, out, a->used + limb_shift + 1);
   if (st != LIMITLESS_OK) return st;
   for (i = 0; i < limb_shift; ++i) out->limbs[i] = (limitless_limb)0;
@@ -787,6 +840,21 @@ static limitless_status limitless__bigint_set_bit(limitless_ctx* ctx, limitless_
   a->limbs[limb] |= (limitless_limb)(((limitless_limb)1) << off);
   a->sign = (a->used == 0) ? 0 : 1;
   return LIMITLESS_OK;
+}
+
+static void limitless__bigint_clear_bit(limitless_bigint* a, limitless_size bit) {
+  limitless_size limb = bit / (limitless_size)LIMITLESS_LIMB_BITS;
+  limitless_size off = bit % (limitless_size)LIMITLESS_LIMB_BITS;
+  if (limb >= a->used) return;
+  a->limbs[limb] &= (limitless_limb)~((limitless_limb)1 << off);
+  limitless__bigint_norm(a);
+}
+
+static int limitless__bigint_get_bit(const limitless_bigint* a, limitless_size bit) {
+  limitless_size limb = bit / (limitless_size)LIMITLESS_LIMB_BITS;
+  limitless_size off = bit % (limitless_size)LIMITLESS_LIMB_BITS;
+  if (limb >= a->used) return 0;
+  return (a->limbs[limb] & ((limitless_limb)1 << off)) != (limitless_limb)0;
 }
 
 static limitless_status limitless__bigint_mul_small_inplace(limitless_ctx* ctx, limitless_bigint* a, limitless_u32 m) {
@@ -1686,6 +1754,348 @@ static limitless_status limitless__number_get_integer_ref(const limitless_number
   }
   return LIMITLESS_ETYPE;
 }
+
+static limitless_status limitless__bigint_pow_u32(limitless_ctx* ctx, limitless_bigint* out, limitless_u32 base_value, limitless_size exp) {
+  limitless_bigint base, result, product;
+  limitless_status st;
+  limitless__bigint_init_raw(&base);
+  limitless__bigint_init_raw(&result);
+  limitless__bigint_init_raw(&product);
+
+  st = limitless__bigint_set_u64(ctx, &base, (limitless_u64)base_value);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_set_u64(ctx, &result, 1);
+  if (st != LIMITLESS_OK) goto cleanup;
+  while (exp != 0) {
+    if ((exp & (limitless_size)1) != 0) {
+      st = limitless__bigint_mul_signed(ctx, &product, &result, &base);
+      if (st != LIMITLESS_OK) goto cleanup;
+      limitless__bigint_swap(&result, &product);
+      product.used = 0;
+      product.sign = 0;
+    }
+    exp >>= 1;
+    if (exp == 0) break;
+    st = limitless__bigint_mul_signed(ctx, &product, &base, &base);
+    if (st != LIMITLESS_OK) goto cleanup;
+    limitless__bigint_swap(&base, &product);
+    product.used = 0;
+    product.sign = 0;
+  }
+  st = limitless__bigint_copy(ctx, out, &result);
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &base);
+  limitless__bigint_clear_raw(ctx, &result);
+  limitless__bigint_clear_raw(ctx, &product);
+  return st;
+}
+
+static limitless_status limitless__bigint_mul_pow10(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* a, limitless_size exp) {
+  limitless_bigint power, product;
+  limitless_status st;
+  limitless__bigint_init_raw(&power);
+  limitless__bigint_init_raw(&product);
+  st = limitless__bigint_pow_u32(ctx, &power, 10u, exp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_mul_signed(ctx, &product, a, &power);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, out, &product);
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &power);
+  limitless__bigint_clear_raw(ctx, &product);
+  return st;
+}
+
+static limitless_status limitless__bigint_to_twos_complement(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* a, limitless_size width) {
+  limitless_size i;
+  limitless_status st;
+  if (width == 0) return LIMITLESS_EINVAL;
+  st = limitless__bigint_reserve(ctx, out, width);
+  if (st != LIMITLESS_OK) return st;
+  for (i = 0; i < width; ++i) {
+    out->limbs[i] = (i < a->used) ? a->limbs[i] : (limitless_limb)0;
+  }
+  out->used = width;
+  out->sign = 1;
+  if (a->sign < 0) {
+    for (i = 0; i < width; ++i) out->limbs[i] = (limitless_limb)~out->limbs[i];
+    for (i = 0; i < width; ++i) {
+      ++out->limbs[i];
+      if (out->limbs[i] != (limitless_limb)0) break;
+    }
+  }
+  return LIMITLESS_OK;
+}
+
+static limitless_status limitless__bigint_from_twos_complement(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* value, limitless_size width) {
+  limitless_size i;
+  int negative;
+  limitless_status st;
+  if (width == 0 || value->used < width) return LIMITLESS_EINVAL;
+  negative = (value->limbs[width - 1] & ((limitless_limb)1 << (LIMITLESS_LIMB_BITS - 1))) != (limitless_limb)0;
+  st = limitless__bigint_reserve(ctx, out, width);
+  if (st != LIMITLESS_OK) return st;
+  for (i = 0; i < width; ++i) {
+    out->limbs[i] = negative ? (limitless_limb)~value->limbs[i] : value->limbs[i];
+  }
+  if (negative) {
+    for (i = 0; i < width; ++i) {
+      ++out->limbs[i];
+      if (out->limbs[i] != (limitless_limb)0) break;
+    }
+  }
+  out->used = width;
+  out->sign = 1;
+  limitless__bigint_norm(out);
+  if (negative && out->used != 0) out->sign = -1;
+  return LIMITLESS_OK;
+}
+
+static limitless_status limitless__bigint_bitwise_binary(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* a, const limitless_bigint* b, int op) {
+  limitless_bigint ta, tb, tr;
+  limitless_size width;
+  limitless_size i;
+  limitless_status st;
+  limitless__bigint_init_raw(&ta);
+  limitless__bigint_init_raw(&tb);
+  limitless__bigint_init_raw(&tr);
+  width = (a->used > b->used) ? a->used : b->used;
+  if (width == (~(limitless_size)0)) {
+    st = LIMITLESS_EOOM;
+    goto cleanup;
+  }
+  ++width;
+  st = limitless__bigint_to_twos_complement(ctx, &ta, a, width);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_to_twos_complement(ctx, &tb, b, width);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_reserve(ctx, &tr, width);
+  if (st != LIMITLESS_OK) goto cleanup;
+  for (i = 0; i < width; ++i) {
+    if (op == 0) tr.limbs[i] = ta.limbs[i] & tb.limbs[i];
+    else if (op == 1) tr.limbs[i] = ta.limbs[i] | tb.limbs[i];
+    else tr.limbs[i] = ta.limbs[i] ^ tb.limbs[i];
+  }
+  tr.used = width;
+  tr.sign = 1;
+  st = limitless__bigint_from_twos_complement(ctx, out, &tr, width);
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &ta);
+  limitless__bigint_clear_raw(ctx, &tb);
+  limitless__bigint_clear_raw(ctx, &tr);
+  return st;
+}
+
+static limitless_status limitless__bigint_bitwise_not(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* a) {
+  limitless_bigint ta;
+  limitless_size width;
+  limitless_size i;
+  limitless_status st;
+  limitless__bigint_init_raw(&ta);
+  if (a->used == (~(limitless_size)0)) {
+    st = LIMITLESS_EOOM;
+    goto cleanup;
+  }
+  width = a->used + 1;
+  st = limitless__bigint_to_twos_complement(ctx, &ta, a, width);
+  if (st != LIMITLESS_OK) goto cleanup;
+  for (i = 0; i < width; ++i) ta.limbs[i] = (limitless_limb)~ta.limbs[i];
+  st = limitless__bigint_from_twos_complement(ctx, out, &ta, width);
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &ta);
+  return st;
+}
+
+static limitless_status limitless__bigint_xgcd(limitless_ctx* ctx, limitless_bigint* gcd, limitless_bigint* x, limitless_bigint* y, const limitless_bigint* a, const limitless_bigint* b) {
+  limitless_bigint old_r, r, q, rem, old_s, s, old_t, t, product, next;
+  limitless_status st;
+  limitless__bigint_init_raw(&old_r); limitless__bigint_init_raw(&r);
+  limitless__bigint_init_raw(&q); limitless__bigint_init_raw(&rem);
+  limitless__bigint_init_raw(&old_s); limitless__bigint_init_raw(&s);
+  limitless__bigint_init_raw(&old_t); limitless__bigint_init_raw(&t);
+  limitless__bigint_init_raw(&product); limitless__bigint_init_raw(&next);
+
+  st = limitless__bigint_abs_copy(ctx, &old_r, a); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_abs_copy(ctx, &r, b); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_set_u64(ctx, &old_s, 1); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_set_u64(ctx, &s, 0); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_set_u64(ctx, &old_t, 0); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_set_u64(ctx, &t, 1); if (st != LIMITLESS_OK) goto cleanup;
+  if (old_r.used == 0 && r.used == 0) {
+    st = limitless__bigint_set_u64(ctx, &old_s, 0);
+    if (st != LIMITLESS_OK) goto cleanup;
+  }
+
+  while (r.used != 0) {
+    st = limitless__bigint_divmod_abs(ctx, &q, &rem, &old_r, &r);
+    if (st != LIMITLESS_OK) goto cleanup;
+    limitless__bigint_swap(&old_r, &r);
+    limitless__bigint_swap(&r, &rem);
+
+    st = limitless__bigint_mul_signed(ctx, &product, &q, &s);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_sub_signed(ctx, &next, &old_s, &product);
+    if (st != LIMITLESS_OK) goto cleanup;
+    limitless__bigint_swap(&old_s, &s);
+    limitless__bigint_swap(&s, &next);
+
+    st = limitless__bigint_mul_signed(ctx, &product, &q, &t);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_sub_signed(ctx, &next, &old_t, &product);
+    if (st != LIMITLESS_OK) goto cleanup;
+    limitless__bigint_swap(&old_t, &t);
+    limitless__bigint_swap(&t, &next);
+  }
+  if (a->sign < 0 && old_s.used != 0) old_s.sign = -old_s.sign;
+  if (b->sign < 0 && old_t.used != 0) old_t.sign = -old_t.sign;
+  st = limitless__bigint_copy(ctx, gcd, &old_r); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, x, &old_s); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, y, &old_t);
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &old_r); limitless__bigint_clear_raw(ctx, &r);
+  limitless__bigint_clear_raw(ctx, &q); limitless__bigint_clear_raw(ctx, &rem);
+  limitless__bigint_clear_raw(ctx, &old_s); limitless__bigint_clear_raw(ctx, &s);
+  limitless__bigint_clear_raw(ctx, &old_t); limitless__bigint_clear_raw(ctx, &t);
+  limitless__bigint_clear_raw(ctx, &product); limitless__bigint_clear_raw(ctx, &next);
+  return st;
+}
+
+static limitless_status limitless__bigint_mod_positive(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* a, const limitless_bigint* mod) {
+  limitless_bigint q, r, adjusted;
+  limitless_status st;
+  limitless__bigint_init_raw(&q);
+  limitless__bigint_init_raw(&r);
+  limitless__bigint_init_raw(&adjusted);
+  st = limitless__bigint_divmod_signed(ctx, &q, &r, a, mod);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (r.sign < 0) {
+    st = limitless__bigint_add_signed(ctx, &adjusted, &r, mod);
+    if (st != LIMITLESS_OK) goto cleanup;
+    limitless__bigint_swap(&r, &adjusted);
+  }
+  st = limitless__bigint_copy(ctx, out, &r);
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &q);
+  limitless__bigint_clear_raw(ctx, &r);
+  limitless__bigint_clear_raw(ctx, &adjusted);
+  return st;
+}
+
+static limitless_u64 limitless__u64_addmod(limitless_u64 a, limitless_u64 b, limitless_u64 mod) {
+  return (a >= mod - b) ? a - (mod - b) : a + b;
+}
+
+static limitless_u64 limitless__u64_mulmod(limitless_u64 a, limitless_u64 b, limitless_u64 mod) {
+  limitless_u64 result = 0;
+  while (b != 0ULL) {
+    if ((b & 1ULL) != 0ULL) result = limitless__u64_addmod(result, a, mod);
+    b >>= 1;
+    if (b != 0ULL) a = limitless__u64_addmod(a, a, mod);
+  }
+  return result;
+}
+
+static limitless_u64 limitless__u64_powmod(limitless_u64 base, limitless_u64 exp, limitless_u64 mod) {
+  limitless_u64 result = 1ULL % mod;
+  base %= mod;
+  while (exp != 0ULL) {
+    if ((exp & 1ULL) != 0ULL) result = limitless__u64_mulmod(result, base, mod);
+    exp >>= 1;
+    if (exp != 0ULL) base = limitless__u64_mulmod(base, base, mod);
+  }
+  return result;
+}
+
+static int limitless__u64_is_prime(limitless_u64 n) {
+  static const limitless_u32 small_primes[] = {2u, 3u, 5u, 7u, 11u, 13u, 17u, 19u, 23u, 29u, 31u, 37u};
+  static const limitless_u64 bases[] = {2ULL, 325ULL, 9375ULL, 28178ULL, 450775ULL, 9780504ULL, 1795265022ULL};
+  limitless_u64 d;
+  limitless_u32 s = 0;
+  limitless_size i;
+  if (n < 2ULL) return 0;
+  for (i = 0; i < (limitless_size)(sizeof(small_primes) / sizeof(small_primes[0])); ++i) {
+    limitless_u64 p = (limitless_u64)small_primes[i];
+    if (n == p) return 1;
+    if ((n % p) == 0ULL) return 0;
+  }
+  d = n - 1ULL;
+  while ((d & 1ULL) == 0ULL) {
+    d >>= 1;
+    ++s;
+  }
+  for (i = 0; i < (limitless_size)(sizeof(bases) / sizeof(bases[0])); ++i) {
+    limitless_u64 a = bases[i] % n;
+    limitless_u64 x;
+    limitless_u32 r;
+    if (a == 0ULL) continue;
+    x = limitless__u64_powmod(a, d, n);
+    if (x == 1ULL || x == n - 1ULL) continue;
+    for (r = 1; r < s; ++r) {
+      x = limitless__u64_mulmod(x, x, n);
+      if (x == n - 1ULL) break;
+    }
+    if (r == s) return 0;
+  }
+  return 1;
+}
+
+static limitless_status limitless__bigint_is_prime(limitless_ctx* ctx, const limitless_bigint* n, int* out) {
+  limitless_u64 small;
+  limitless_status st;
+  limitless_bigint divisor, quotient, remainder, square;
+  if (!ctx || !n || !out) return LIMITLESS_EINVAL;
+  if (n->sign <= 0 || n->used == 0) {
+    *out = 0;
+    return LIMITLESS_OK;
+  }
+  st = limitless__bigint_abs_to_u64(n, &small);
+  if (st == LIMITLESS_OK) {
+    *out = limitless__u64_is_prime(small);
+    return LIMITLESS_OK;
+  }
+  if (st != LIMITLESS_ERANGE) return st;
+  if ((n->limbs[0] & (limitless_limb)1) == (limitless_limb)0) {
+    *out = 0;
+    return LIMITLESS_OK;
+  }
+
+  limitless__bigint_init_raw(&divisor);
+  limitless__bigint_init_raw(&quotient);
+  limitless__bigint_init_raw(&remainder);
+  limitless__bigint_init_raw(&square);
+  st = limitless__bigint_set_u64(ctx, &divisor, 3);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_set_u64(ctx, &square, 9);
+  if (st != LIMITLESS_OK) goto cleanup;
+  while (limitless__mag_cmp(&square, n) <= 0) {
+    st = limitless__bigint_divmod_abs(ctx, &quotient, &remainder, n, &divisor);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (remainder.used == 0) {
+      *out = 0;
+      st = LIMITLESS_OK;
+      goto cleanup;
+    }
+    st = limitless__bigint_add_small_inplace(ctx, &divisor, 2u);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_mul_signed(ctx, &square, &divisor, &divisor);
+    if (st != LIMITLESS_OK) goto cleanup;
+  }
+  *out = 1;
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &divisor);
+  limitless__bigint_clear_raw(ctx, &quotient);
+  limitless__bigint_clear_raw(ctx, &remainder);
+  limitless__bigint_clear_raw(ctx, &square);
+  return st;
+}
 /* GCOVR_EXCL_STOP */
 
 LIMITLESS_API limitless_status limitless_ctx_init(limitless_ctx* ctx, const limitless_alloc* alloc) {
@@ -1960,6 +2370,182 @@ LIMITLESS_API limitless_status limitless_number_from_double_exact(limitless_ctx*
   return limitless__number_from_mantissa_exp2(ctx, out, sign, mant, e2);
 }
 
+static int limitless__decimal_literal_requested(const char* s, int base) {
+  const char* p;
+  if (!s || (base != 0 && base != 10)) return 0;
+  p = s;
+  while (*p && limitless__is_space(*p)) ++p;
+  if (*p == '+' || *p == '-') ++p;
+  if (base == 0 && p[0] == '0' &&
+      (p[1] == 'x' || p[1] == 'X' || p[1] == 'b' || p[1] == 'B')) {
+    return 0;
+  }
+  while (*p) {
+    if (*p == '.' || *p == 'e' || *p == 'E') return 1;
+    ++p;
+  }
+  return 0;
+}
+
+static limitless_status limitless__number_from_decimal_cstr(limitless_ctx* ctx, limitless_number* out, const char* s) {
+  const char* p;
+  limitless_bigint coefficient, scaled, denominator;
+  limitless_rational rational;
+  limitless_number tmp;
+  limitless_status st;
+  limitless_size fractional_digits = 0;
+  limitless_size exponent = 0;
+  limitless_size power;
+  int sign = 1;
+  int exponent_negative = 0;
+  int exponent_overflow = 0;
+  int any_digits = 0;
+  int denominator_scale = 0;
+
+  if (!ctx || !out || !s) return LIMITLESS_EINVAL;
+  limitless__bigint_init_raw(&coefficient);
+  limitless__bigint_init_raw(&scaled);
+  limitless__bigint_init_raw(&denominator);
+  limitless__rational_init(&rational);
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+
+  p = s;
+  while (*p && limitless__is_space(*p)) ++p;
+  if (*p == '+' || *p == '-') {
+    if (*p == '-') sign = -1;
+    ++p;
+  }
+
+  st = limitless__bigint_set_u64(ctx, &coefficient, 0);
+  if (st != LIMITLESS_OK) goto cleanup;
+  while (*p >= '0' && *p <= '9') {
+    st = limitless__bigint_mul_small_inplace(ctx, &coefficient, 10u);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_add_small_inplace(ctx, &coefficient, (limitless_u32)(*p - '0'));
+    if (st != LIMITLESS_OK) goto cleanup;
+    any_digits = 1;
+    ++p;
+  }
+  if (*p == '.') {
+    ++p;
+    while (*p >= '0' && *p <= '9') {
+      if (fractional_digits == (~(limitless_size)0)) {
+        st = LIMITLESS_ERANGE;
+        goto cleanup;
+      }
+      st = limitless__bigint_mul_small_inplace(ctx, &coefficient, 10u);
+      if (st != LIMITLESS_OK) goto cleanup;
+      st = limitless__bigint_add_small_inplace(ctx, &coefficient, (limitless_u32)(*p - '0'));
+      if (st != LIMITLESS_OK) goto cleanup;
+      ++fractional_digits;
+      any_digits = 1;
+      ++p;
+    }
+  }
+  if (!any_digits) {
+    st = LIMITLESS_EPARSE;
+    goto cleanup;
+  }
+  if (*p == 'e' || *p == 'E') {
+    ++p;
+    if (*p == '+' || *p == '-') {
+      exponent_negative = (*p == '-');
+      ++p;
+    }
+    if (*p < '0' || *p > '9') {
+      st = LIMITLESS_EPARSE;
+      goto cleanup;
+    }
+    while (*p >= '0' && *p <= '9') {
+      limitless_u32 digit = (limitless_u32)(*p - '0');
+      if (!exponent_overflow) {
+        if (exponent > ((~(limitless_size)0) - (limitless_size)digit) / 10u) {
+          exponent_overflow = 1;
+        } else {
+          exponent = exponent * 10u + (limitless_size)digit;
+        }
+      }
+      ++p;
+    }
+  }
+  while (*p && limitless__is_space(*p)) ++p;
+  if (*p != '\0') {
+    st = LIMITLESS_EPARSE;
+    goto cleanup;
+  }
+
+  if (coefficient.used == 0) {
+    st = limitless__bigint_set_u64(ctx, &tmp.v.i, 0);
+    if (st != LIMITLESS_OK) goto cleanup;
+    limitless__number_swap(out, &tmp);
+    st = LIMITLESS_OK;
+    goto cleanup;
+  }
+  if (exponent_overflow) {
+    st = LIMITLESS_ERANGE;
+    goto cleanup;
+  }
+  coefficient.sign = sign;
+
+  if (exponent_negative) {
+    if (exponent > (~(limitless_size)0) - fractional_digits) {
+      st = LIMITLESS_ERANGE;
+      goto cleanup;
+    }
+    power = exponent + fractional_digits;
+    denominator_scale = 1;
+  } else if (exponent >= fractional_digits) {
+    power = exponent - fractional_digits;
+  } else {
+    power = fractional_digits - exponent;
+    denominator_scale = 1;
+  }
+
+  if (!denominator_scale) {
+    if (power == 0) st = limitless__bigint_copy(ctx, &scaled, &coefficient);
+    else st = limitless__bigint_mul_pow10(ctx, &scaled, &coefficient, power);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_copy(ctx, &tmp.v.i, &scaled);
+    if (st != LIMITLESS_OK) goto cleanup;
+  } else {
+    st = limitless__bigint_pow_u32(ctx, &denominator, 10u, power);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_copy(ctx, &rational.num, &coefficient);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_copy(ctx, &rational.den, &denominator);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__rational_normalize(ctx, &rational);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (limitless__rational_den_is_one(&rational)) {
+      st = limitless__bigint_copy(ctx, &tmp.v.i, &rational.num);
+      if (st != LIMITLESS_OK) goto cleanup;
+    } else {
+      limitless__bigint_clear_raw(ctx, &tmp.v.i);
+      tmp.kind = LIMITLESS_KIND_RAT;
+      limitless__rational_init(&tmp.v.r);
+      st = limitless__rational_copy(ctx, &tmp.v.r, &rational);
+      if (st != LIMITLESS_OK) goto cleanup;
+    }
+  }
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &coefficient);
+  limitless__bigint_clear_raw(ctx, &scaled);
+  limitless__bigint_clear_raw(ctx, &denominator);
+  limitless__rational_clear(ctx, &rational);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_from_decimal(limitless_ctx* ctx, limitless_number* out, const char* s) {
+  return limitless__number_from_decimal_cstr(ctx, out, s);
+}
+
 LIMITLESS_API limitless_status limitless_number_from_cstr(limitless_ctx* ctx, limitless_number* out, const char* s, int base) {
   limitless_number tmp;
   limitless_status st;
@@ -1975,12 +2561,18 @@ LIMITLESS_API limitless_status limitless_number_from_cstr(limitless_ctx* ctx, li
   while (*slash && *slash != '/') ++slash;
 
   if (*slash == '\0') {
-    tmp.kind = LIMITLESS_KIND_INT;
-    st = limitless__bigint_from_base_digits(ctx, &tmp.v.i, s, base, &end);
-    if (st != LIMITLESS_OK) goto cleanup;
-    if (*end != '\0') {
-      st = LIMITLESS_EPARSE;
-      goto cleanup;
+    if (limitless__decimal_literal_requested(s, base)) {
+      limitless_number_clear(ctx, &tmp);
+      st = limitless__number_from_decimal_cstr(ctx, &tmp, s);
+      if (st != LIMITLESS_OK) goto cleanup;
+    } else {
+      tmp.kind = LIMITLESS_KIND_INT;
+      st = limitless__bigint_from_base_digits(ctx, &tmp.v.i, s, base, &end);
+      if (st != LIMITLESS_OK) goto cleanup;
+      if (*end != '\0') {
+        st = LIMITLESS_EPARSE;
+        goto cleanup;
+      }
     }
   } else {
     tmp.kind = LIMITLESS_KIND_RAT;
@@ -2143,6 +2735,477 @@ LIMITLESS_API limitless_status limitless_number_to_i64(limitless_ctx* ctx, const
   return LIMITLESS_OK;
 }
 
+static limitless_status limitless__bigint_ratio_log2(limitless_ctx* ctx, const limitless_bigint* numerator, const limitless_bigint* denominator, int* out) {
+  limitless_size numerator_bits;
+  limitless_size denominator_bits;
+  limitless_size difference;
+  limitless_bigint shifted;
+  limitless_status st;
+  int estimate;
+  int cmp;
+  if (!ctx || !numerator || !denominator || !out ||
+      numerator->used == 0 || denominator->used == 0) {
+    return LIMITLESS_EINVAL;
+  }
+  numerator_bits = limitless__bigint_bit_length(numerator);
+  denominator_bits = limitless__bigint_bit_length(denominator);
+  if (numerator_bits >= denominator_bits) {
+    difference = numerator_bits - denominator_bits;
+    if (difference > (limitless_size)4096) {
+      *out = 4096;
+      return LIMITLESS_OK;
+    }
+    estimate = (int)difference;
+  } else {
+    difference = denominator_bits - numerator_bits;
+    if (difference > (limitless_size)4096) {
+      *out = -4096;
+      return LIMITLESS_OK;
+    }
+    estimate = -(int)difference;
+  }
+  limitless__bigint_init_raw(&shifted);
+  if (estimate >= 0) {
+    st = limitless__bigint_shl_bits(ctx, &shifted, denominator, (limitless_size)estimate);
+    if (st == LIMITLESS_OK) cmp = limitless__mag_cmp(numerator, &shifted);
+  } else {
+    st = limitless__bigint_shl_bits(ctx, &shifted, numerator, (limitless_size)(-estimate));
+    if (st == LIMITLESS_OK) cmp = limitless__mag_cmp(&shifted, denominator);
+  }
+  limitless__bigint_clear_raw(ctx, &shifted);
+  if (st != LIMITLESS_OK) return st;
+  if (cmp < 0) --estimate;
+  *out = estimate;
+  return LIMITLESS_OK;
+}
+
+static limitless_status limitless__bigint_div_round_scaled(limitless_ctx* ctx, limitless_bigint* out, const limitless_bigint* numerator, const limitless_bigint* denominator, int scale) {
+  limitless_bigint scaled_numerator, scaled_denominator, remainder, twice_remainder;
+  limitless_status st;
+  int cmp;
+  limitless__bigint_init_raw(&scaled_numerator);
+  limitless__bigint_init_raw(&scaled_denominator);
+  limitless__bigint_init_raw(&remainder);
+  limitless__bigint_init_raw(&twice_remainder);
+
+  if (scale >= 0) {
+    st = limitless__bigint_shl_bits(ctx, &scaled_numerator, numerator, (limitless_size)scale);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_abs_copy(ctx, &scaled_denominator, denominator);
+  } else {
+    st = limitless__bigint_abs_copy(ctx, &scaled_numerator, numerator);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_shl_bits(ctx, &scaled_denominator, denominator, (limitless_size)(-scale));
+  }
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_divmod_abs(ctx, out, &remainder, &scaled_numerator, &scaled_denominator);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_shl_bits(ctx, &twice_remainder, &remainder, 1);
+  if (st != LIMITLESS_OK) goto cleanup;
+  cmp = limitless__mag_cmp(&twice_remainder, &scaled_denominator);
+  if (cmp > 0 || (cmp == 0 && out->used != 0 &&
+                  (out->limbs[0] & (limitless_limb)1) != (limitless_limb)0)) {
+    st = limitless__bigint_add_small_inplace(ctx, out, 1u);
+  }
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &scaled_numerator);
+  limitless__bigint_clear_raw(ctx, &scaled_denominator);
+  limitless__bigint_clear_raw(ctx, &remainder);
+  limitless__bigint_clear_raw(ctx, &twice_remainder);
+  return st;
+}
+
+static limitless_status limitless__number_to_ieee_bits(limitless_ctx* ctx, const limitless_number* n, int fraction_bits, int exponent_bits, int exponent_min, int exponent_max, int exponent_bias, limitless_u64* out) {
+  const limitless_bigint* numerator;
+  const limitless_bigint* denominator;
+  limitless_bigint one, quotient;
+  limitless_status st;
+  limitless_u64 quotient_u64;
+  limitless_u64 normal_min;
+  limitless_u64 normal_limit;
+  limitless_u64 sign_bit = 0;
+  limitless_u64 exponent_field;
+  limitless_u64 fraction;
+  int exponent;
+  int sign;
+  int scale;
+
+  if (!ctx || !n || !out) return LIMITLESS_EINVAL;
+  limitless__bigint_init_raw(&one);
+  limitless__bigint_init_raw(&quotient);
+  if (n->kind == LIMITLESS_KIND_INT) {
+    numerator = &n->v.i;
+    st = limitless__bigint_set_u64(ctx, &one, 1);
+    if (st != LIMITLESS_OK) goto cleanup;
+    denominator = &one;
+  } else if (n->kind == LIMITLESS_KIND_RAT) {
+    numerator = &n->v.r.num;
+    denominator = &n->v.r.den;
+    if (denominator->sign <= 0 || denominator->used == 0) {
+      st = LIMITLESS_EINVAL;
+      goto cleanup;
+    }
+  } else {
+    st = LIMITLESS_EINVAL;
+    goto cleanup;
+  }
+  if (numerator->used == 0) {
+    *out = 0;
+    st = LIMITLESS_OK;
+    goto cleanup;
+  }
+
+  sign = numerator->sign < 0;
+  if (sign) sign_bit = (limitless_u64)1 << (fraction_bits + exponent_bits);
+  st = limitless__bigint_ratio_log2(ctx, numerator, denominator, &exponent);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (exponent > exponent_max) {
+    *out = sign_bit | (((((limitless_u64)1 << exponent_bits) - 1ULL) << fraction_bits));
+    st = LIMITLESS_ERANGE;
+    goto cleanup;
+  }
+  if (exponent < exponent_min - fraction_bits - 1) {
+    *out = sign_bit;
+    st = LIMITLESS_OK;
+    goto cleanup;
+  }
+
+  normal_min = (limitless_u64)1 << fraction_bits;
+  normal_limit = (limitless_u64)1 << (fraction_bits + 1);
+  if (exponent >= exponent_min) {
+    scale = fraction_bits - exponent;
+    st = limitless__bigint_div_round_scaled(ctx, &quotient, numerator, denominator, scale);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_abs_to_u64(&quotient, &quotient_u64);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (quotient_u64 >= normal_limit) {
+      quotient_u64 >>= 1;
+      ++exponent;
+    }
+    if (exponent > exponent_max) {
+      *out = sign_bit | (((((limitless_u64)1 << exponent_bits) - 1ULL) << fraction_bits));
+      st = LIMITLESS_ERANGE;
+      goto cleanup;
+    }
+    if (quotient_u64 < normal_min) {
+      st = LIMITLESS_EINVAL;
+      goto cleanup;
+    }
+    exponent_field = (limitless_u64)(exponent + exponent_bias);
+    fraction = quotient_u64 - normal_min;
+  } else {
+    scale = fraction_bits - exponent_min;
+    st = limitless__bigint_div_round_scaled(ctx, &quotient, numerator, denominator, scale);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_abs_to_u64(&quotient, &quotient_u64);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (quotient_u64 >= normal_min) {
+      exponent_field = 1;
+      fraction = 0;
+    } else {
+      exponent_field = 0;
+      fraction = quotient_u64;
+    }
+  }
+  *out = sign_bit | (exponent_field << fraction_bits) | fraction;
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &one);
+  limitless__bigint_clear_raw(ctx, &quotient);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_to_float(limitless_ctx* ctx, const limitless_number* n, float* out) {
+  union {
+    limitless_u32 bits;
+    float value;
+  } converted;
+  limitless_u64 bits;
+  limitless_status st;
+  if (!out) return LIMITLESS_EINVAL;
+  st = limitless__number_to_ieee_bits(ctx, n, 23, 8, -126, 127, 127, &bits);
+  if (st == LIMITLESS_OK || st == LIMITLESS_ERANGE) {
+    converted.bits = (limitless_u32)bits;
+    *out = converted.value;
+  }
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_to_double(limitless_ctx* ctx, const limitless_number* n, double* out) {
+  union {
+    limitless_u64 bits;
+    double value;
+  } converted;
+  limitless_u64 bits;
+  limitless_status st;
+  if (!out) return LIMITLESS_EINVAL;
+  st = limitless__number_to_ieee_bits(ctx, n, 52, 11, -1022, 1023, 1023, &bits);
+  if (st == LIMITLESS_OK || st == LIMITLESS_ERANGE) {
+    converted.bits = bits;
+    *out = converted.value;
+  }
+  return st;
+}
+
+static int limitless__size_add(limitless_size a, limitless_size b, limitless_size* out) {
+  if (a > (~(limitless_size)0) - b) return 0;
+  *out = a + b;
+  return 1;
+}
+
+static limitless_size limitless__bigint_magnitude_bytes(const limitless_bigint* a) {
+  limitless_size bits = limitless__bigint_bit_length(a);
+  return bits / 8u + ((bits % 8u) != 0 ? (limitless_size)1 : (limitless_size)0);
+}
+
+static limitless_size limitless__binary_varint_size(limitless_size value) {
+  limitless_size size = 1;
+  while (value >= (limitless_size)128) {
+    value >>= 7;
+    ++size;
+  }
+  return size;
+}
+
+static void limitless__binary_write_varint(limitless_u8* out, limitless_size value, limitless_size size) {
+  limitless_size i = size;
+  while (i > 0) {
+    --i;
+    out[i] = (limitless_u8)(value & (limitless_size)0x7f);
+    if (i + 1 < size) out[i] |= (limitless_u8)0x80;
+    value >>= 7;
+  }
+}
+
+static limitless_status limitless__number_binary_layout(const limitless_number* n, limitless_u8* tag, const limitless_bigint** numerator, const limitless_bigint** denominator, limitless_size* numerator_bytes, limitless_size* denominator_bytes, limitless_size* varint_bytes, limitless_size* total) {
+  limitless_size needed;
+  if (!n || !tag || !numerator || !denominator || !numerator_bytes ||
+      !denominator_bytes || !varint_bytes || !total) {
+    return LIMITLESS_EINVAL;
+  }
+  *numerator = NULL;
+  *denominator = NULL;
+  *numerator_bytes = 0;
+  *denominator_bytes = 0;
+  *varint_bytes = 0;
+  if (n->kind == LIMITLESS_KIND_INT) {
+    if (n->v.i.used == 0) {
+      *tag = (limitless_u8)0x00;
+      *total = 1;
+      return LIMITLESS_OK;
+    }
+    if (n->v.i.sign != 1 && n->v.i.sign != -1) return LIMITLESS_EINVAL;
+    *tag = (n->v.i.sign < 0) ? (limitless_u8)0x02 : (limitless_u8)0x01;
+    *numerator = &n->v.i;
+    *numerator_bytes = limitless__bigint_magnitude_bytes(&n->v.i);
+    if (*numerator_bytes == 0 || !limitless__size_add((limitless_size)1, *numerator_bytes, total)) {
+      return LIMITLESS_EOOM;
+    }
+    return LIMITLESS_OK;
+  }
+  if (n->kind != LIMITLESS_KIND_RAT || n->v.r.num.used == 0 ||
+      (n->v.r.num.sign != 1 && n->v.r.num.sign != -1) ||
+      n->v.r.den.used == 0 || n->v.r.den.sign != 1 ||
+      limitless__rational_den_is_one(&n->v.r)) {
+    return LIMITLESS_EINVAL;
+  }
+  *tag = (n->v.r.num.sign < 0) ? (limitless_u8)0x04 : (limitless_u8)0x03;
+  *numerator = &n->v.r.num;
+  *denominator = &n->v.r.den;
+  *numerator_bytes = limitless__bigint_magnitude_bytes(*numerator);
+  *denominator_bytes = limitless__bigint_magnitude_bytes(*denominator);
+  if (*numerator_bytes == 0 || *denominator_bytes == 0) return LIMITLESS_EINVAL;
+  *varint_bytes = limitless__binary_varint_size(*numerator_bytes);
+  if (!limitless__size_add((limitless_size)1, *varint_bytes, &needed) ||
+      !limitless__size_add(needed, *numerator_bytes, &needed) ||
+      !limitless__size_add(needed, *denominator_bytes, total)) {
+    return LIMITLESS_EOOM;
+  }
+  return LIMITLESS_OK;
+}
+
+static limitless_status limitless__number_binary_validate_canonical(limitless_ctx* ctx, const limitless_number* n) {
+  limitless_bigint gcd;
+  limitless_status st;
+  if (!ctx || !n) return LIMITLESS_EINVAL;
+  if (n->kind != LIMITLESS_KIND_RAT) return LIMITLESS_OK;
+  limitless__bigint_init_raw(&gcd);
+  st = limitless__bigint_gcd(ctx, &gcd, &n->v.r.num, &n->v.r.den);
+  if (st == LIMITLESS_OK && !limitless__bigint_is_one(&gcd)) st = LIMITLESS_EINVAL;
+  limitless__bigint_clear_raw(ctx, &gcd);
+  return st;
+}
+
+static void limitless__bigint_write_magnitude_be(const limitless_bigint* a, limitless_u8* out, limitless_size bytes) {
+  limitless_size i;
+  limitless_size limb_bytes = (limitless_size)sizeof(limitless_limb);
+  for (i = 0; i < bytes; ++i) {
+    limitless_size source = bytes - 1 - i;
+    limitless_size limb = source / limb_bytes;
+    limitless_size shift = (source % limb_bytes) * 8u;
+    out[i] = (limitless_u8)(a->limbs[limb] >> shift);
+  }
+}
+
+static limitless_status limitless__bigint_from_magnitude_be(limitless_ctx* ctx, limitless_bigint* out, const limitless_u8* data, limitless_size bytes, int sign) {
+  limitless_size limb_bytes = (limitless_size)sizeof(limitless_limb);
+  limitless_size need;
+  limitless_size i;
+  limitless_status st;
+  if (!ctx || !out || !data || bytes == 0 || data[0] == (limitless_u8)0 ||
+      (sign != 1 && sign != -1)) {
+    return LIMITLESS_EPARSE;
+  }
+  need = bytes / limb_bytes + ((bytes % limb_bytes) != 0 ? (limitless_size)1 : (limitless_size)0);
+  st = limitless__bigint_reserve(ctx, out, need);
+  if (st != LIMITLESS_OK) return st;
+  for (i = 0; i < need; ++i) out->limbs[i] = (limitless_limb)0;
+  for (i = 0; i < bytes; ++i) {
+    limitless_size source = bytes - 1 - i;
+    limitless_size limb = source / limb_bytes;
+    limitless_size shift = (source % limb_bytes) * 8u;
+    out->limbs[limb] |= (limitless_limb)((limitless_limb)data[i] << shift);
+  }
+  out->used = need;
+  out->sign = sign;
+  limitless__bigint_norm(out);
+  if (out->used == 0) return LIMITLESS_EPARSE;
+  return LIMITLESS_OK;
+}
+
+static limitless_status limitless__binary_read_varint(const limitless_u8* data, limitless_size len, limitless_size* offset, limitless_size* out) {
+  limitless_size value = 0;
+  limitless_size start;
+  if (!data || !offset || !out || *offset >= len) return LIMITLESS_EPARSE;
+  start = *offset;
+  for (;;) {
+    limitless_u8 byte;
+    limitless_u8 part;
+    if (*offset >= len) return LIMITLESS_EPARSE;
+    byte = data[(*offset)++];
+    part = (limitless_u8)(byte & (limitless_u8)0x7f);
+    if (*offset - start > 1 && data[start] == (limitless_u8)0x80) return LIMITLESS_EPARSE;
+    if (value > ((~(limitless_size)0) >> 7) ||
+        (value == ((~(limitless_size)0) >> 7) &&
+         (limitless_size)part > ((~(limitless_size)0) & (limitless_size)0x7f))) {
+      return LIMITLESS_EPARSE;
+    }
+    value = (value << 7) | (limitless_size)part;
+    if ((byte & (limitless_u8)0x80) == 0) break;
+  }
+  *out = value;
+  return LIMITLESS_OK;
+}
+
+LIMITLESS_API limitless_status limitless_number_to_binary(limitless_ctx* ctx, const limitless_number* n, limitless_u8* buf, limitless_size cap, limitless_size* written) {
+  limitless_u8 tag;
+  const limitless_bigint* numerator;
+  const limitless_bigint* denominator;
+  limitless_size numerator_bytes;
+  limitless_size denominator_bytes;
+  limitless_size varint_bytes;
+  limitless_size total;
+  limitless_status st;
+  if (!ctx) return LIMITLESS_EINVAL;
+  st = limitless__number_binary_layout(n, &tag, &numerator, &denominator,
+                                       &numerator_bytes, &denominator_bytes,
+                                       &varint_bytes, &total);
+  if (st != LIMITLESS_OK) return st;
+  st = limitless__number_binary_validate_canonical(ctx, n);
+  if (st != LIMITLESS_OK) return st;
+  if (written) *written = total;
+  if (!buf || cap < total) return LIMITLESS_EBUF;
+  buf[0] = tag;
+  if (tag == (limitless_u8)0x01 || tag == (limitless_u8)0x02) {
+    limitless__bigint_write_magnitude_be(numerator, buf + 1, numerator_bytes);
+  } else if (tag == (limitless_u8)0x03 || tag == (limitless_u8)0x04) {
+    limitless__binary_write_varint(buf + 1, numerator_bytes, varint_bytes);
+    limitless__bigint_write_magnitude_be(numerator, buf + 1 + varint_bytes, numerator_bytes);
+    limitless__bigint_write_magnitude_be(denominator, buf + 1 + varint_bytes + numerator_bytes, denominator_bytes);
+  }
+  return LIMITLESS_OK;
+}
+
+LIMITLESS_API limitless_status limitless_number_from_binary(limitless_ctx* ctx, limitless_number* out, const limitless_u8* data, limitless_size len) {
+  limitless_number tmp;
+  limitless_bigint gcd;
+  limitless_status st;
+  limitless_size offset;
+  limitless_size numerator_bytes;
+  limitless_size denominator_bytes;
+  limitless_u8 tag;
+  if (!ctx || !out || !data) return LIMITLESS_EINVAL;
+  if (len == 0) return LIMITLESS_EPARSE;
+  tag = data[0];
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  limitless__bigint_init_raw(&gcd);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+
+  if (tag == (limitless_u8)0x00) {
+    if (len != 1) {
+      st = LIMITLESS_EPARSE;
+      goto cleanup;
+    }
+  } else if (tag == (limitless_u8)0x01 || tag == (limitless_u8)0x02) {
+    st = limitless__bigint_from_magnitude_be(ctx, &tmp.v.i, data + 1, len - 1,
+                                              tag == (limitless_u8)0x01 ? 1 : -1);
+    if (st != LIMITLESS_OK) goto cleanup;
+  } else if (tag == (limitless_u8)0x03 || tag == (limitless_u8)0x04) {
+    offset = 1;
+    st = limitless__binary_read_varint(data, len, &offset, &numerator_bytes);
+    if (st != LIMITLESS_OK || numerator_bytes == 0 || numerator_bytes > len - offset) {
+      st = LIMITLESS_EPARSE;
+      goto cleanup;
+    }
+    denominator_bytes = len - offset - numerator_bytes;
+    if (denominator_bytes == 0) {
+      st = LIMITLESS_EPARSE;
+      goto cleanup;
+    }
+    limitless__bigint_clear_raw(ctx, &tmp.v.i);
+    tmp.kind = LIMITLESS_KIND_RAT;
+    limitless__rational_init(&tmp.v.r);
+    st = limitless__bigint_from_magnitude_be(ctx, &tmp.v.r.num, data + offset, numerator_bytes,
+                                              tag == (limitless_u8)0x03 ? 1 : -1);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_from_magnitude_be(ctx, &tmp.v.r.den, data + offset + numerator_bytes,
+                                              denominator_bytes, 1);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (limitless__rational_den_is_one(&tmp.v.r)) {
+      st = LIMITLESS_EPARSE;
+      goto cleanup;
+    }
+    st = limitless__bigint_gcd(ctx, &gcd, &tmp.v.r.num, &tmp.v.r.den);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (!limitless__bigint_is_one(&gcd)) {
+      st = LIMITLESS_EPARSE;
+      goto cleanup;
+    }
+  } else {
+    st = LIMITLESS_EPARSE;
+    goto cleanup;
+  }
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &gcd);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_to_bytes(limitless_ctx* ctx, const limitless_number* n, limitless_u8* buf, limitless_size cap, limitless_size* written) {
+  return limitless_number_to_binary(ctx, n, buf, cap, written);
+}
+
+LIMITLESS_API limitless_status limitless_number_from_bytes(limitless_ctx* ctx, limitless_number* out, const limitless_u8* data, limitless_size len) {
+  return limitless_number_from_binary(ctx, out, data, len);
+}
+
 /* GCOVR_EXCL_START */
 static limitless_status limitless__number_binop(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b, int op) {
   limitless_status st;
@@ -2301,6 +3364,63 @@ rat_done:
   return LIMITLESS_OK;
 }
 
+LIMITLESS_API limitless_status limitless_number_divmod(limitless_ctx* ctx, limitless_number* quotient, limitless_number* remainder, const limitless_number* a, const limitless_number* b) {
+  const limitless_bigint* ia;
+  const limitless_bigint* ib;
+  limitless_number qtmp, rtmp;
+  limitless_status st;
+  if (!ctx || !quotient || !remainder || !a || !b || quotient == remainder) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK ||
+      limitless__number_get_integer_ref(b, &ib) != LIMITLESS_OK) {
+    return LIMITLESS_ETYPE;
+  }
+  qtmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&qtmp.v.i);
+  rtmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&rtmp.v.i);
+  st = limitless_number_init(ctx, &qtmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless_number_init(ctx, &rtmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_divmod_signed(ctx, &qtmp.v.i, &rtmp.v.i, ia, ib);
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(quotient, &qtmp);
+  limitless__number_swap(remainder, &rtmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless_number_clear(ctx, &qtmp);
+  limitless_number_clear(ctx, &rtmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_mod(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  const limitless_bigint* ia;
+  const limitless_bigint* ib;
+  limitless_number tmp;
+  limitless_bigint quotient;
+  limitless_status st;
+  if (!ctx || !out || !a || !b) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK ||
+      limitless__number_get_integer_ref(b, &ib) != LIMITLESS_OK) {
+    return LIMITLESS_ETYPE;
+  }
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  limitless__bigint_init_raw(&quotient);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_divmod_signed(ctx, &quotient, &tmp.v.i, ia, ib);
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &quotient);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
 LIMITLESS_API limitless_status limitless_number_neg(limitless_ctx* ctx, limitless_number* out, const limitless_number* a) {
   limitless_number tmp;
   limitless_status st;
@@ -2341,6 +3461,156 @@ LIMITLESS_API limitless_status limitless_number_abs(limitless_ctx* ctx, limitles
   limitless__number_swap(out, &tmp);
   limitless_number_clear(ctx, &tmp);
   return LIMITLESS_OK;
+}
+
+static limitless_status limitless__number_bitwise_op(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b, int op) {
+  const limitless_bigint* ia;
+  const limitless_bigint* ib;
+  limitless_number tmp;
+  limitless_status st;
+  if (!ctx || !out || !a || !b) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK ||
+      limitless__number_get_integer_ref(b, &ib) != LIMITLESS_OK) {
+    return LIMITLESS_ETYPE;
+  }
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_bitwise_binary(ctx, &tmp.v.i, ia, ib, op);
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_bit_and(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  return limitless__number_bitwise_op(ctx, out, a, b, 0);
+}
+
+LIMITLESS_API limitless_status limitless_number_bit_or(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  return limitless__number_bitwise_op(ctx, out, a, b, 1);
+}
+
+LIMITLESS_API limitless_status limitless_number_bit_xor(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  return limitless__number_bitwise_op(ctx, out, a, b, 2);
+}
+
+LIMITLESS_API limitless_status limitless_number_bit_not(limitless_ctx* ctx, limitless_number* out, const limitless_number* a) {
+  const limitless_bigint* ia;
+  limitless_number tmp;
+  limitless_status st;
+  if (!ctx || !out || !a) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_bitwise_not(ctx, &tmp.v.i, ia);
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+static limitless_status limitless__number_shift(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits, int left) {
+  const limitless_bigint* ia;
+  limitless_number tmp;
+  limitless_status st;
+  if (!ctx || !out || !a) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (left) {
+    st = limitless__bigint_shl_bits(ctx, &tmp.v.i, ia, bits);
+  } else {
+    st = limitless__bigint_copy(ctx, &tmp.v.i, ia);
+    if (st == LIMITLESS_OK) limitless__bigint_shr_bits_inplace(&tmp.v.i, bits);
+  }
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_shl(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits) {
+  return limitless__number_shift(ctx, out, a, bits, 1);
+}
+
+LIMITLESS_API limitless_status limitless_number_shr(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits) {
+  return limitless__number_shift(ctx, out, a, bits, 0);
+}
+
+LIMITLESS_API limitless_status limitless_number_shift_left(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits) {
+  return limitless_number_shl(ctx, out, a, bits);
+}
+
+LIMITLESS_API limitless_status limitless_number_shift_right(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bits) {
+  return limitless_number_shr(ctx, out, a, bits);
+}
+
+LIMITLESS_API limitless_status limitless_number_bit_length(limitless_ctx* ctx, const limitless_number* n, limitless_size* out) {
+  const limitless_bigint* integer;
+  if (!ctx || !n || !out) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(n, &integer) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  *out = limitless__bigint_bit_length(integer);
+  return LIMITLESS_OK;
+}
+
+LIMITLESS_API limitless_status limitless_number_get_bit(limitless_ctx* ctx, const limitless_number* n, limitless_size bit, int* out) {
+  const limitless_bigint* integer;
+  if (!ctx || !n || !out) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(n, &integer) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  *out = limitless__bigint_get_bit(integer, bit);
+  return LIMITLESS_OK;
+}
+
+LIMITLESS_API limitless_status limitless_number_assign_bit(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bit, int value) {
+  const limitless_bigint* integer;
+  limitless_number tmp;
+  limitless_status st;
+  int sign;
+  if (!ctx || !out || !a || (value != 0 && value != 1)) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &integer) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, &tmp.v.i, integer);
+  if (st != LIMITLESS_OK) goto cleanup;
+  sign = tmp.v.i.sign;
+  if (value) st = limitless__bigint_set_bit(ctx, &tmp.v.i, bit);
+  else {
+    limitless__bigint_clear_bit(&tmp.v.i, bit);
+    st = LIMITLESS_OK;
+  }
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (tmp.v.i.used != 0 && sign < 0) tmp.v.i.sign = -1;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_set_bit(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bit) {
+  return limitless_number_assign_bit(ctx, out, a, bit, 1);
+}
+
+LIMITLESS_API limitless_status limitless_number_clear_bit(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_size bit) {
+  return limitless_number_assign_bit(ctx, out, a, bit, 0);
 }
 
 LIMITLESS_API int limitless_number_cmp(limitless_ctx* ctx, const limitless_number* a, const limitless_number* b, limitless_status* st) {
@@ -2409,6 +3679,258 @@ LIMITLESS_API limitless_status limitless_number_gcd(limitless_ctx* ctx, limitles
   limitless__number_swap(out, &tmp);
   limitless_number_clear(ctx, &tmp);
   return LIMITLESS_OK;
+}
+
+LIMITLESS_API limitless_status limitless_number_lcm(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* b) {
+  const limitless_bigint* ia;
+  const limitless_bigint* ib;
+  limitless_bigint gcd, quotient, product;
+  limitless_number tmp;
+  limitless_status st;
+  if (!ctx || !out || !a || !b) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK ||
+      limitless__number_get_integer_ref(b, &ib) != LIMITLESS_OK) {
+    return LIMITLESS_ETYPE;
+  }
+  limitless__bigint_init_raw(&gcd);
+  limitless__bigint_init_raw(&quotient);
+  limitless__bigint_init_raw(&product);
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (ia->used == 0 || ib->used == 0) {
+    st = limitless__bigint_set_u64(ctx, &tmp.v.i, 0);
+    if (st != LIMITLESS_OK) goto cleanup;
+  } else {
+    st = limitless__bigint_gcd(ctx, &gcd, ia, ib);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_div_exact(ctx, &quotient, ia, &gcd);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_mul_signed(ctx, &product, &quotient, ib);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (product.sign < 0) product.sign = 1;
+    st = limitless__bigint_copy(ctx, &tmp.v.i, &product);
+    if (st != LIMITLESS_OK) goto cleanup;
+  }
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &gcd);
+  limitless__bigint_clear_raw(ctx, &quotient);
+  limitless__bigint_clear_raw(ctx, &product);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_extended_gcd(limitless_ctx* ctx, limitless_number* gcd, limitless_number* x, limitless_number* y, const limitless_number* a, const limitless_number* b) {
+  const limitless_bigint* ia;
+  const limitless_bigint* ib;
+  limitless_bigint gg, xx, yy;
+  limitless_number gtmp, xtmp, ytmp;
+  limitless_status st;
+  if (!ctx || !gcd || !x || !y || !a || !b || gcd == x || gcd == y || x == y) {
+    return LIMITLESS_EINVAL;
+  }
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK ||
+      limitless__number_get_integer_ref(b, &ib) != LIMITLESS_OK) {
+    return LIMITLESS_ETYPE;
+  }
+  limitless__bigint_init_raw(&gg);
+  limitless__bigint_init_raw(&xx);
+  limitless__bigint_init_raw(&yy);
+  gtmp.kind = LIMITLESS_KIND_INT; limitless__bigint_init_raw(&gtmp.v.i);
+  xtmp.kind = LIMITLESS_KIND_INT; limitless__bigint_init_raw(&xtmp.v.i);
+  ytmp.kind = LIMITLESS_KIND_INT; limitless__bigint_init_raw(&ytmp.v.i);
+  st = limitless__bigint_xgcd(ctx, &gg, &xx, &yy, ia, ib);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless_number_init(ctx, &gtmp); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless_number_init(ctx, &xtmp); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless_number_init(ctx, &ytmp); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, &gtmp.v.i, &gg); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, &xtmp.v.i, &xx); if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, &ytmp.v.i, &yy); if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(gcd, &gtmp);
+  limitless__number_swap(x, &xtmp);
+  limitless__number_swap(y, &ytmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &gg);
+  limitless__bigint_clear_raw(ctx, &xx);
+  limitless__bigint_clear_raw(ctx, &yy);
+  limitless_number_clear(ctx, &gtmp);
+  limitless_number_clear(ctx, &xtmp);
+  limitless_number_clear(ctx, &ytmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_xgcd(limitless_ctx* ctx, limitless_number* gcd, limitless_number* x, limitless_number* y, const limitless_number* a, const limitless_number* b) {
+  return limitless_number_extended_gcd(ctx, gcd, x, y, a, b);
+}
+
+LIMITLESS_API limitless_status limitless_number_mod_inverse(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, const limitless_number* mod) {
+  const limitless_bigint* ia;
+  const limitless_bigint* im;
+  limitless_bigint gcd, x, y, inverse;
+  limitless_number tmp;
+  limitless_status st;
+  if (!ctx || !out || !a || !mod) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(a, &ia) != LIMITLESS_OK ||
+      limitless__number_get_integer_ref(mod, &im) != LIMITLESS_OK) {
+    return LIMITLESS_ETYPE;
+  }
+  if (im->used == 0) return LIMITLESS_EDIVZERO;
+  if (im->sign < 0) return LIMITLESS_EINVAL;
+  limitless__bigint_init_raw(&gcd);
+  limitless__bigint_init_raw(&x);
+  limitless__bigint_init_raw(&y);
+  limitless__bigint_init_raw(&inverse);
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless__bigint_xgcd(ctx, &gcd, &x, &y, ia, im);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (!limitless__bigint_is_one(&gcd)) {
+    st = LIMITLESS_EINVAL;
+    goto cleanup;
+  }
+  st = limitless__bigint_mod_positive(ctx, &inverse, &x, im);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, &tmp.v.i, &inverse);
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &gcd);
+  limitless__bigint_clear_raw(ctx, &x);
+  limitless__bigint_clear_raw(ctx, &y);
+  limitless__bigint_clear_raw(ctx, &inverse);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_is_prime(limitless_ctx* ctx, const limitless_number* n, int* out) {
+  const limitless_bigint* integer;
+  if (!ctx || !n || !out) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(n, &integer) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  return limitless__bigint_is_prime(ctx, integer, out);
+}
+
+LIMITLESS_API limitless_status limitless_number_next_prime(limitless_ctx* ctx, limitless_number* out, const limitless_number* n) {
+  const limitless_bigint* integer;
+  limitless_bigint candidate, two;
+  limitless_number tmp;
+  limitless_status st;
+  int prime;
+  if (!ctx || !out || !n) return LIMITLESS_EINVAL;
+  if (limitless__number_get_integer_ref(n, &integer) != LIMITLESS_OK) return LIMITLESS_ETYPE;
+  limitless__bigint_init_raw(&candidate);
+  limitless__bigint_init_raw(&two);
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  st = limitless__bigint_set_u64(ctx, &two, 2);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (limitless__bigint_cmp_signed(integer, &two) < 0) {
+    st = limitless__bigint_copy(ctx, &candidate, &two);
+    if (st != LIMITLESS_OK) goto cleanup;
+  } else {
+    st = limitless__bigint_copy(ctx, &candidate, integer);
+    if (st != LIMITLESS_OK) goto cleanup;
+    st = limitless__bigint_add_small_inplace(ctx, &candidate, 1u);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if ((candidate.limbs[0] & (limitless_limb)1) == (limitless_limb)0) {
+      st = limitless__bigint_add_small_inplace(ctx, &candidate, 1u);
+      if (st != LIMITLESS_OK) goto cleanup;
+    }
+  }
+  for (;;) {
+    st = limitless__bigint_is_prime(ctx, &candidate, &prime);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (prime) break;
+    st = limitless__bigint_add_small_inplace(ctx, &candidate, 2u);
+    if (st != LIMITLESS_OK) goto cleanup;
+  }
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  st = limitless__bigint_copy(ctx, &tmp.v.i, &candidate);
+  if (st != LIMITLESS_OK) goto cleanup;
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &candidate);
+  limitless__bigint_clear_raw(ctx, &two);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+static limitless_status limitless__number_round_integer(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, int mode) {
+  limitless_number tmp;
+  limitless_bigint quotient, remainder, adjustment, adjusted;
+  limitless_status st;
+  int direction = 0;
+  if (!ctx || !out || !a || mode < 0 || mode > 2) return LIMITLESS_EINVAL;
+  tmp.kind = LIMITLESS_KIND_INT;
+  limitless__bigint_init_raw(&tmp.v.i);
+  limitless__bigint_init_raw(&quotient);
+  limitless__bigint_init_raw(&remainder);
+  limitless__bigint_init_raw(&adjustment);
+  limitless__bigint_init_raw(&adjusted);
+  st = limitless_number_init(ctx, &tmp);
+  if (st != LIMITLESS_OK) goto cleanup;
+  if (a->kind == LIMITLESS_KIND_INT) {
+    st = limitless__bigint_copy(ctx, &tmp.v.i, &a->v.i);
+    if (st != LIMITLESS_OK) goto cleanup;
+  } else if (a->kind == LIMITLESS_KIND_RAT) {
+    if (a->v.r.den.used == 0 || a->v.r.den.sign <= 0) {
+      st = LIMITLESS_EINVAL;
+      goto cleanup;
+    }
+    st = limitless__bigint_divmod_signed(ctx, &quotient, &remainder, &a->v.r.num, &a->v.r.den);
+    if (st != LIMITLESS_OK) goto cleanup;
+    if (remainder.used != 0) {
+      if (mode == 0 && a->v.r.num.sign < 0) direction = -1;
+      if (mode == 1 && a->v.r.num.sign > 0) direction = 1;
+    }
+    if (direction != 0) {
+      st = limitless__bigint_set_i64(ctx, &adjustment, (limitless_i64)direction);
+      if (st != LIMITLESS_OK) goto cleanup;
+      st = limitless__bigint_add_signed(ctx, &adjusted, &quotient, &adjustment);
+      if (st != LIMITLESS_OK) goto cleanup;
+      limitless__bigint_swap(&quotient, &adjusted);
+    }
+    st = limitless__bigint_copy(ctx, &tmp.v.i, &quotient);
+    if (st != LIMITLESS_OK) goto cleanup;
+  } else {
+    st = LIMITLESS_EINVAL;
+    goto cleanup;
+  }
+  limitless__number_swap(out, &tmp);
+  st = LIMITLESS_OK;
+
+cleanup:
+  limitless__bigint_clear_raw(ctx, &quotient);
+  limitless__bigint_clear_raw(ctx, &remainder);
+  limitless__bigint_clear_raw(ctx, &adjustment);
+  limitless__bigint_clear_raw(ctx, &adjusted);
+  limitless_number_clear(ctx, &tmp);
+  return st;
+}
+
+LIMITLESS_API limitless_status limitless_number_floor(limitless_ctx* ctx, limitless_number* out, const limitless_number* a) {
+  return limitless__number_round_integer(ctx, out, a, 0);
+}
+
+LIMITLESS_API limitless_status limitless_number_ceil(limitless_ctx* ctx, limitless_number* out, const limitless_number* a) {
+  return limitless__number_round_integer(ctx, out, a, 1);
+}
+
+LIMITLESS_API limitless_status limitless_number_trunc(limitless_ctx* ctx, limitless_number* out, const limitless_number* a) {
+  return limitless__number_round_integer(ctx, out, a, 2);
 }
 
 LIMITLESS_API limitless_status limitless_number_pow_u64(limitless_ctx* ctx, limitless_number* out, const limitless_number* a, limitless_u64 exp) {

@@ -70,6 +70,10 @@ Invoke-CompileC (Join-Path $build "test_limitless_conversion_edges.exe") @("test
 & (Join-Path $build "test_limitless_conversion_edges.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Invoke-CompileC (Join-Path $build "test_limitless_extended_api.exe") @("tests/test_limitless_extended_api.c")
+& (Join-Path $build "test_limitless_extended_api.exe")
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
 Invoke-CompileC (Join-Path $build "test_limitless_invariants.exe") @("tests/test_limitless_invariants.c")
 & (Join-Path $build "test_limitless_invariants.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -100,6 +104,10 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_basic.exe") @("tests/test_limitless_cpp.cpp")
 & (Join-Path $build "test_limitless_cpp_basic.exe")
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_extended.exe") @("tests/test_limitless_cpp_extended.cpp")
+& (Join-Path $build "test_limitless_cpp_extended.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_generated.exe") @("tests/test_limitless_cpp_generated.cpp")

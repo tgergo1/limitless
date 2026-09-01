@@ -203,6 +203,50 @@ int main() {
 }
 ```
 
+## Extended numeric APIs
+
+Integer-only operations return `LIMITLESS_ETYPE` for non-integral rationals and
+leave output values unchanged on failure.
+
+- `limitless_number_divmod` and `limitless_number_mod` use a quotient truncated
+  toward zero; the remainder has the dividend's sign.
+- `limitless_number_bit_and`, `_bit_or`, `_bit_xor`, and `_bit_not` use
+  unbounded two's-complement semantics. Logical shifts and bit
+  length/get/set operations act on a number's magnitude.
+- `limitless_number_lcm`, `limitless_number_extended_gcd` (also `xgcd`),
+  `limitless_number_mod_inverse`, `limitless_number_is_prime`, and
+  `limitless_number_next_prime` provide integer number-theory primitives.
+  Primality is deterministic: it uses deterministic Miller-Rabin bases for
+  64-bit values and exact trial division for larger values.
+- Decimal input is exact: `"1.25"`, `".5e3"`, and `"-3.5e-2"` parse as
+  `5/4`, `500`, and `-7/200`. Decimal/scientific syntax is accepted by
+  `limitless_number_from_str`, base-10 `from_cstr`, and `from_decimal`.
+- `to_float` and `to_double` round to nearest, ties to even. Overflow writes
+  signed infinity and returns `LIMITLESS_ERANGE`.
+- `floor`, `ceil`, and `trunc` return integer values from exact rationals.
+
+`limitless_number_to_binary` / `from_binary` provide a portable canonical
+wire format. It uses one tag byte, unsigned big-endian magnitudes, and a
+minimal big-endian base-128 numerator-length varint for rationals:
+
+| Value | Encoding |
+| --- | --- |
+| `0` | `00` |
+| positive integer | `01` followed by its magnitude |
+| negative integer | `02` followed by its magnitude |
+| positive rational | `03`, numerator length, numerator, denominator |
+| negative rational | `04`, numerator length, numerator, denominator |
+
+Magnitude encodings cannot be empty or start with zero; rational encodings
+must already be reduced and cannot use denominator `1`. `to_bytes` and
+`from_bytes` are aliases.
+
+The C++ wrapper also supports `<<` / `>>` streams, `std::hash`, and a
+`std::numeric_limits<limitless::number>` specialization. The wrapper continues
+to report C API failures through `limitless_cpp_last_status()`; stream
+extraction additionally uses the standard `failbit` convention and the wrapper
+does not explicitly throw exceptions.
+
 ## Package consumption
 
 ### CMake

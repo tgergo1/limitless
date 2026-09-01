@@ -177,6 +177,9 @@ run_binary "$BUILD_DIR/test_limitless_parse_edges"
 compile_c "$BUILD_DIR/test_limitless_conversion_edges" tests/test_limitless_conversion_edges.c
 run_binary "$BUILD_DIR/test_limitless_conversion_edges"
 
+compile_c "$BUILD_DIR/test_limitless_extended_api" tests/test_limitless_extended_api.c
+run_binary "$BUILD_DIR/test_limitless_extended_api"
+
 compile_c "$BUILD_DIR/test_limitless_invariants" tests/test_limitless_invariants.c
 run_binary "$BUILD_DIR/test_limitless_invariants"
 
@@ -206,6 +209,9 @@ if [[ "$SKIP_CPP" != "1" ]]; then
 
   compile_cpp "$BUILD_DIR/test_limitless_cpp_basic" tests/test_limitless_cpp.cpp
   run_binary "$BUILD_DIR/test_limitless_cpp_basic"
+
+  compile_cpp "$BUILD_DIR/test_limitless_cpp_extended" tests/test_limitless_cpp_extended.cpp
+  run_binary "$BUILD_DIR/test_limitless_cpp_extended"
 
   compile_cpp "$BUILD_DIR/test_limitless_cpp_generated" tests/test_limitless_cpp_generated.cpp
   run_binary "$BUILD_DIR/test_limitless_cpp_generated"
