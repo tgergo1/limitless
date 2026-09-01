@@ -2742,7 +2742,7 @@ static limitless_status limitless__bigint_ratio_log2(limitless_ctx* ctx, const l
   limitless_bigint shifted;
   limitless_status st;
   int estimate;
-  int cmp;
+  int cmp = 0;
   if (!ctx || !numerator || !denominator || !out ||
       numerator->used == 0 || denominator->used == 0) {
     return LIMITLESS_EINVAL;
@@ -2957,7 +2957,8 @@ static int limitless__size_add(limitless_size a, limitless_size b, limitless_siz
 
 static limitless_size limitless__bigint_magnitude_bytes(const limitless_bigint* a) {
   limitless_size bits = limitless__bigint_bit_length(a);
-  return bits / 8u + ((bits % 8u) != 0 ? (limitless_size)1 : (limitless_size)0);
+  if ((bits % 8u) != 0) return bits / 8u + (limitless_size)1;
+  return bits / 8u;
 }
 
 static limitless_size limitless__binary_varint_size(limitless_size value) {
