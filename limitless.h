@@ -3059,7 +3059,8 @@ static limitless_status limitless__bigint_from_magnitude_be(limitless_ctx* ctx, 
       (sign != 1 && sign != -1)) {
     return LIMITLESS_EPARSE;
   }
-  need = bytes / limb_bytes + ((bytes % limb_bytes) != 0 ? (limitless_size)1 : (limitless_size)0);
+  need = bytes / limb_bytes;
+  if ((bytes % limb_bytes) != 0) ++need;
   st = limitless__bigint_reserve(ctx, out, need);
   if (st != LIMITLESS_OK) return st;
   for (i = 0; i < need; ++i) out->limbs[i] = (limitless_limb)0;

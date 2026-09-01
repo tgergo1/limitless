@@ -418,7 +418,22 @@ inline std::ostream& operator<<(std::ostream& stream, const limitless_number& va
 inline std::istream& operator>>(std::istream& stream, limitless_number& value) {
   std::string token;
   limitless_status st;
-  if (!(stream >> token)) return stream;
+  char character;
+  int next;
+  std::istream::sentry sentry(stream);
+  if (!sentry) return stream;
+  next = stream.peek();
+  while (next != std::char_traits<char>::eof() &&
+         next != ' ' && next != '\t' && next != '\n' && next != '\r' &&
+         next != '\f' && next != '\v') {
+    stream.get(character);
+    token += character;
+    next = stream.peek();
+  }
+  if (token.empty()) {
+    stream.setstate(std::ios_base::failbit);
+    return stream;
+  }
   limitless_number parsed = limitless_number::parse(token.c_str(), 0);
   st = limitless_cpp_last_status();
   if (st != LIMITLESS_OK) {

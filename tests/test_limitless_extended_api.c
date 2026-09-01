@@ -36,6 +36,9 @@ static void test_integer_and_bit_apis(void) {
   expect_str(&ctx, &r, "-2");
   assert(limitless_number_mod(&ctx, &out, &a, &b) == LIMITLESS_OK);
   expect_str(&ctx, &out, "-2");
+  assert(limitless_number_from_str(&ctx, &a, "1/2") == LIMITLESS_OK);
+  assert(limitless_number_divmod(&ctx, &q, &r, &a, &b) == LIMITLESS_ETYPE);
+  assert(limitless_number_mod(&ctx, &out, &a, &b) == LIMITLESS_ETYPE);
 
   assert(limitless_number_from_str(&ctx, &a, "240") == LIMITLESS_OK);
   assert(limitless_number_from_str(&ctx, &b, "15") == LIMITLESS_OK);
@@ -52,6 +55,8 @@ static void test_integer_and_bit_apis(void) {
   assert(limitless_number_from_i64(&ctx, &b, 3) == LIMITLESS_OK);
   assert(limitless_number_bit_and(&ctx, &out, &a, &b) == LIMITLESS_OK);
   expect_str(&ctx, &out, "3");
+  assert(limitless_number_from_str(&ctx, &b, "1/2") == LIMITLESS_OK);
+  assert(limitless_number_bit_and(&ctx, &out, &a, &b) == LIMITLESS_ETYPE);
 
   assert(limitless_number_from_i64(&ctx, &a, -9) == LIMITLESS_OK);
   assert(limitless_number_shr(&ctx, &out, &a, 2) == LIMITLESS_OK);
@@ -69,6 +74,12 @@ static void test_integer_and_bit_apis(void) {
   assert(limitless_number_set_bit(&ctx, &out, &a, 0) == LIMITLESS_OK);
   expect_str(&ctx, &out, "257");
   assert(limitless_number_clear_bit(&ctx, &out, &out, 8) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "1");
+  assert(limitless_number_assign_bit(&ctx, &out, &out, 3, 1) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "9");
+  assert(limitless_number_assign_bit(&ctx, &out, &out, 3, 0) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "1");
+  assert(limitless_number_shift_right(&ctx, &out, &a, 8) == LIMITLESS_OK);
   expect_str(&ctx, &out, "1");
 
   limitless_number_clear(&ctx, &a);
@@ -95,6 +106,11 @@ static void test_number_theory_apis(void) {
   assert(limitless_number_from_i64(&ctx, &b, -6) == LIMITLESS_OK);
   assert(limitless_number_lcm(&ctx, &out, &a, &b) == LIMITLESS_OK);
   expect_str(&ctx, &out, "42");
+  assert(limitless_number_from_i64(&ctx, &a, 0) == LIMITLESS_OK);
+  assert(limitless_number_lcm(&ctx, &out, &a, &b) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "0");
+  assert(limitless_number_from_str(&ctx, &a, "1/2") == LIMITLESS_OK);
+  assert(limitless_number_lcm(&ctx, &out, &a, &b) == LIMITLESS_ETYPE);
 
   assert(limitless_number_from_i64(&ctx, &a, 240) == LIMITLESS_OK);
   assert(limitless_number_from_i64(&ctx, &b, 46) == LIMITLESS_OK);
@@ -104,6 +120,8 @@ static void test_number_theory_apis(void) {
   assert(limitless_number_mul(&ctx, &right, &b, &y) == LIMITLESS_OK);
   assert(limitless_number_add(&ctx, &out, &left, &right) == LIMITLESS_OK);
   expect_str(&ctx, &out, "2");
+  assert(limitless_number_xgcd(&ctx, &g, &x, &y, &a, &b) == LIMITLESS_OK);
+  expect_str(&ctx, &g, "2");
 
   assert(limitless_number_from_i64(&ctx, &a, -3) == LIMITLESS_OK);
   assert(limitless_number_from_i64(&ctx, &b, 11) == LIMITLESS_OK);
@@ -125,6 +143,12 @@ static void test_number_theory_apis(void) {
   assert(limitless_number_from_i64(&ctx, &a, 14) == LIMITLESS_OK);
   assert(limitless_number_next_prime(&ctx, &out, &a) == LIMITLESS_OK);
   expect_str(&ctx, &out, "17");
+  assert(limitless_number_from_i64(&ctx, &a, 13) == LIMITLESS_OK);
+  assert(limitless_number_next_prime(&ctx, &out, &a) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "17");
+  assert(limitless_number_from_i64(&ctx, &a, -1) == LIMITLESS_OK);
+  assert(limitless_number_next_prime(&ctx, &out, &a) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "2");
 
   limitless_number_clear(&ctx, &a);
   limitless_number_clear(&ctx, &b);
@@ -168,6 +192,11 @@ static void test_parse_binary_conversion_and_rounding(void) {
   expect_str(&ctx, &out, "-7/12");
   assert(limitless_number_from_bytes(&ctx, &out, noncanonical, (limitless_size)sizeof(noncanonical)) == LIMITLESS_EPARSE);
   expect_str(&ctx, &out, "-7/12");
+  assert(limitless_number_from_i64(&ctx, &value, 0) == LIMITLESS_OK);
+  assert(limitless_number_to_binary(&ctx, &value, binary, (limitless_size)sizeof(binary), &written) == LIMITLESS_OK);
+  assert(written == 1 && binary[0] == 0);
+  assert(limitless_number_from_binary(&ctx, &out, binary, written) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "0");
 
   assert(limitless_number_from_str(&ctx, &value, "1/2") == LIMITLESS_OK);
   assert(limitless_number_to_float(&ctx, &value, &f) == LIMITLESS_OK);
@@ -191,6 +220,9 @@ static void test_parse_binary_conversion_and_rounding(void) {
   expect_str(&ctx, &out, "-2");
   assert(limitless_number_trunc(&ctx, &out, &value) == LIMITLESS_OK);
   expect_str(&ctx, &out, "-2");
+  assert(limitless_number_from_i64(&ctx, &value, 7) == LIMITLESS_OK);
+  assert(limitless_number_floor(&ctx, &out, &value) == LIMITLESS_OK);
+  expect_str(&ctx, &out, "7");
 
   limitless_number_clear(&ctx, &value);
   limitless_number_clear(&ctx, &out);
