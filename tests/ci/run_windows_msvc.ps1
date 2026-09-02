@@ -14,7 +14,7 @@ $build = Join-Path $root "build/ci/windows-$Compiler-$Mode"
 New-Item -ItemType Directory -Path $build -Force | Out-Null
 
 $cFlags = @("/nologo", "/W4", "/WX", "/std:c11")
-$cxxFlags = @("/nologo", "/W4", "/WX", "/std:c++14", "/permissive-")
+$cxxFlags = @("/nologo", "/W4", "/WX", "/std:c++14", "/permissive-", "/EHsc")
 $defs = @()
 
 if ($Mode -eq "limb64") {
@@ -106,9 +106,11 @@ Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_basic.exe") @("tests/tes
 & (Join-Path $build "test_limitless_cpp_basic.exe")
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_extended.exe") @("tests/test_limitless_cpp_extended.cpp")
-& (Join-Path $build "test_limitless_cpp_extended.exe")
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($Mode -ne "noexceptions") {
+  Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_extended.exe") @("tests/test_limitless_cpp_extended.cpp")
+  & (Join-Path $build "test_limitless_cpp_extended.exe")
+  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
 
 Invoke-CompileCpp (Join-Path $build "test_limitless_cpp_generated.exe") @("tests/test_limitless_cpp_generated.cpp")
 & (Join-Path $build "test_limitless_cpp_generated.exe")
