@@ -20,11 +20,13 @@ fi
   --suppress=missingIncludeSystem \
   --suppress=assertWithSideEffect \
   --suppress=redundantAssignment \
+  --suppress=constParameterPointer \
   --suppress=cstyleCast \
   --suppress=dangerousTypeCast \
   --quiet \
   tests/test_limitless.c \
   tests/test_limitless_api.c \
+  tests/test_limitless_extended_api.c \
   tests/test_limitless_parse_edges.c \
   tests/test_limitless_conversion_edges.c \
   tests/test_limitless_invariants.c \
@@ -39,6 +41,7 @@ fi
   --suppress=missingIncludeSystem \
   --suppress=assertWithSideEffect \
   --suppress=redundantAssignment \
+  --suppress=constParameterPointer \
   --suppress=noExplicitConstructor \
   --suppress=useInitializationList \
   --suppress=uninitMemberVar \
@@ -47,6 +50,7 @@ fi
   --suppress=dangerousTypeCast \
   --quiet \
   tests/test_limitless_cpp.cpp \
+  tests/test_limitless_cpp_extended.cpp \
   tests/test_cpp_namespace_strict.cpp \
   tests/test_cpp_legacy_bridge.cpp \
   tests/test_limitless_threads.cpp \

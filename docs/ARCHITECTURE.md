@@ -17,8 +17,10 @@
 
 1. Bigint primitives (limbs, reserve/copy/norm, arithmetic).
 2. Rational normalization and reduction.
-3. Public C APIs for parse/format/ops/conversions.
-4. C++ ergonomic wrapper and thread-local default-context/status helpers.
+3. Public C APIs for parse/format/ops/conversions, canonical binary transport,
+   bit operations, and number theory.
+4. C++ ergonomic wrapper, stream/hash/numeric-limits integration, and
+   thread-local default-context/status helpers.
 
 ## Build and packaging
 

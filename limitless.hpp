@@ -7,6 +7,12 @@
 #endif
 
 #include <string>
+#include <cstddef>
+#include <functional>
+#include <ios>
+#include <istream>
+#include <limits>
+#include <ostream>
 #include <type_traits>
 
 #ifdef LIMITLESS_H
@@ -399,6 +405,48 @@ private:
 /* Preferred namespaced type alias for C++ users. */
 using number = limitless_number;
 
+inline std::ostream& operator<<(std::ostream& stream, const limitless_number& value) {
+  std::string text = value.str();
+  if (limitless_cpp_last_status() != LIMITLESS_OK) {
+    stream.setstate(std::ios_base::failbit);
+    return stream;
+  }
+  stream.write(text.data(), static_cast<std::streamsize>(text.size()));
+  return stream;
+}
+
+inline std::istream& operator>>(std::istream& stream, limitless_number& value) {
+  std::string token;
+  limitless_status st;
+  char character;
+  int next;
+  std::istream::sentry sentry(stream);
+  if (!sentry) return stream;
+  next = stream.peek();
+  while (next != std::char_traits<char>::eof() &&
+         next != ' ' && next != '\t' && next != '\n' && next != '\r' &&
+         next != '\f' && next != '\v') {
+    stream.get(character);
+    token += character;
+    next = stream.peek();
+  }
+  if (token.empty()) {
+    stream.setstate(std::ios_base::failbit);
+    return stream;
+  }
+  limitless_number parsed = limitless_number::parse(token.c_str(), 0);
+  st = limitless_cpp_last_status();
+  if (st != LIMITLESS_OK) {
+    stream.setstate(std::ios_base::failbit);
+    return stream;
+  }
+  value = parsed;
+  if (limitless_cpp_last_status() != LIMITLESS_OK) {
+    stream.setstate(std::ios_base::failbit);
+  }
+  return stream;
+}
+
 template <typename T>
 inline typename std::enable_if<std::is_arithmetic<T>::value, limitless_number>::type
 operator+(T lhs, const limitless_number& rhs) {
@@ -460,6 +508,86 @@ operator>=(T lhs, const limitless_number& rhs) {
 }
 
 } /* namespace limitless */
+
+namespace limitless {
+
+inline std::size_t limitless_cpp__hash_bigint(const limitless_bigint& value, std::size_t hash) {
+  limitless_size i;
+  hash ^= static_cast<std::size_t>(value.sign + 2);
+  hash *= static_cast<std::size_t>(1099511628211ULL);
+  for (i = 0; i < value.used; ++i) {
+    limitless_limb limb = value.limbs[i];
+    hash ^= static_cast<std::size_t>(limb);
+    hash *= static_cast<std::size_t>(1099511628211ULL);
+#if (LIMITLESS_LIMB_BITS == LIMITLESS_LIMB_BITS_64)
+    hash ^= static_cast<std::size_t>((limitless_u64)limb >> 32);
+    hash *= static_cast<std::size_t>(1099511628211ULL);
+#endif
+  }
+  return hash;
+}
+
+inline std::size_t limitless_cpp_hash(const number& value) {
+  const limitless_c_number* raw = value.raw();
+  std::size_t hash = static_cast<std::size_t>(1469598103934665603ULL);
+  if (raw->kind == LIMITLESS_KIND_INT) {
+    return limitless_cpp__hash_bigint(raw->v.i, hash);
+  }
+  hash ^= static_cast<std::size_t>(1);
+  hash *= static_cast<std::size_t>(1099511628211ULL);
+  hash = limitless_cpp__hash_bigint(raw->v.r.num, hash);
+  return limitless_cpp__hash_bigint(raw->v.r.den, hash);
+}
+
+} /* namespace limitless */
+
+namespace std {
+
+template <>
+struct hash< ::limitless::number > {
+  std::size_t operator()(const ::limitless::number& value) const {
+    return ::limitless::limitless_cpp_hash(value);
+  }
+};
+
+template <>
+class numeric_limits< ::limitless::number > {
+public:
+  static const bool is_specialized = true;
+  static ::limitless::number min() { return ::limitless::number(); }
+  static ::limitless::number max() { return ::limitless::number(); }
+  static ::limitless::number lowest() { return ::limitless::number(); }
+  static const int digits = 0;
+  static const int digits10 = 0;
+  static const int max_digits10 = 0;
+  static const bool is_signed = true;
+  static const bool is_integer = false;
+  static const bool is_exact = true;
+  static const int radix = 2;
+  static ::limitless::number epsilon() { return ::limitless::number(); }
+  static ::limitless::number round_error() { return ::limitless::number(); }
+  static const int min_exponent = 0;
+  static const int min_exponent10 = 0;
+  static const int max_exponent = 0;
+  static const int max_exponent10 = 0;
+  static const bool has_infinity = false;
+  static const bool has_quiet_NaN = false;
+  static const bool has_signaling_NaN = false;
+  static const float_denorm_style has_denorm = denorm_absent;
+  static const bool has_denorm_loss = false;
+  static ::limitless::number infinity() { return ::limitless::number(); }
+  static ::limitless::number quiet_NaN() { return ::limitless::number(); }
+  static ::limitless::number signaling_NaN() { return ::limitless::number(); }
+  static ::limitless::number denorm_min() { return ::limitless::number(); }
+  static const bool is_iec559 = false;
+  static const bool is_bounded = false;
+  static const bool is_modulo = false;
+  static const bool traps = false;
+  static const bool tinyness_before = false;
+  static const float_round_style round_style = round_to_nearest;
+};
+
+} /* namespace std */
 
 /*
 Compatibility layer:

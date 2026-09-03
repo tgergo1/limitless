@@ -64,6 +64,9 @@ compile_c "$BUILD_DIR/test_limitless_parse_edges" tests/test_limitless_parse_edg
 compile_c "$BUILD_DIR/test_limitless_conversion_edges" tests/test_limitless_conversion_edges.c
 "$BUILD_DIR/test_limitless_conversion_edges"
 
+compile_c "$BUILD_DIR/test_limitless_extended_api" tests/test_limitless_extended_api.c
+"$BUILD_DIR/test_limitless_extended_api"
+
 compile_c "$BUILD_DIR/test_limitless_invariants" tests/test_limitless_invariants.c
 "$BUILD_DIR/test_limitless_invariants"
 
@@ -90,6 +93,9 @@ compile_cpp "$BUILD_DIR/test_multi_cpp" tests/multi_cpp_impl.cpp tests/multi_cpp
 
 compile_cpp "$BUILD_DIR/test_limitless_cpp_basic" tests/test_limitless_cpp.cpp
 "$BUILD_DIR/test_limitless_cpp_basic"
+
+compile_cpp "$BUILD_DIR/test_limitless_cpp_extended" tests/test_limitless_cpp_extended.cpp
+"$BUILD_DIR/test_limitless_cpp_extended"
 
 compile_cpp "$BUILD_DIR/test_limitless_cpp_generated" tests/test_limitless_cpp_generated.cpp
 "$BUILD_DIR/test_limitless_cpp_generated"
