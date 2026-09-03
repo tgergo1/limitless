@@ -20,9 +20,9 @@ extern "C" {
 #endif
 
 #define LIMITLESS_VERSION_MAJOR 0
-#define LIMITLESS_VERSION_MINOR 2
+#define LIMITLESS_VERSION_MINOR 3
 #define LIMITLESS_VERSION_PATCH 0
-#define LIMITLESS_VERSION_STRING "0.2.0"
+#define LIMITLESS_VERSION_STRING "0.3.0"
 
 #ifndef NULL
 #ifdef __cplusplus

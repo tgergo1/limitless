@@ -7,6 +7,14 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-03
+
+### Added
+- Complete numeric API support across integer, rational, conversion, and comparison operations.
+- Expanded benchmark reporting, regression coverage, and optimization work for small-modulus and arithmetic hot paths.
+- Improved CI gating around coverage, static analysis, and security validation for release readiness.
+- Packaging and release automation refinements for install artifacts, hash verification, and upstream registry integration.
+
 ## [0.2.0] - 2026-04-22
 
 ### Added

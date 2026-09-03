@@ -21,7 +21,7 @@
 
 Single-header exact big numbers for c and c++. It stores exact integers and exact fractions (`a/b`) and grows until memory runs out.
 
-Current line: `experimental`, version `0.2.0`.
+Current line: `experimental`, version `0.3.0`.
 
 ## What is in this repo
 
@@ -285,7 +285,7 @@ consumer `conanfile.txt` example:
 
 ```ini
 [requires]
-limitless/0.2.0
+limitless/0.3.0
 
 [generators]
 CMakeDeps
